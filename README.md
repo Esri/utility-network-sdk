@@ -2,7 +2,7 @@
 
 The utility network is a new network model intended to support utility solutions. It comes with a pre-defined and extensible data model that is optimized for solutions and applications. 
 
-Access an overview of the Utility Network SDK classes. Download code snippets (coming soon) for authored add-ins to extend utility network functionality and capabilities. 
+Access an overview of the Utility Network SDK classes. Download code snippets for authored add-ins to extend utility network functionality and capabilities. 
 
 The described SDK will evolve in future releases based upon additional knowledge gained, user feedback, and platform expansion.
 
