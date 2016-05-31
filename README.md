@@ -1,18 +1,23 @@
-## ArcGIS Pro 1.3 Utility Network Alpha SDK
+﻿## ArcGIS Pro 1.3 Utility Network Alpha SDK
 
 The utility network in ArcGIS provides organizations that manage networks – like electric, telecom, gas, sewer, and water lines – an extensible solution that focuses on performance, scalability, interoperability, and data integrity. 
 
-This repository describes the ArcGIS Pro SDK to use and extend the utility network.  The wiki contains documentation.  Code samples (coming soon) show how to author add-ins for ArcGIS Pro.
+This repository describes the ArcGIS Pro SDK to use and extend the utility network.  The wiki contains documentation.  Code samples show how to author add-ins for ArcGIS Pro.
 
 The SDK described here will evolve based upon user feedback and the evolution of the platform.
 
 ###Table of Contents
 
+* [Samples](#samples)
 * [Requirements](#requirements)
 * [Resources](#resources)
 * [Known Issues](#known-issues)
 
 -------------------------
+##Samples
+This repository contains ArcGIS Pro Add-in Samples for the ArcGIS Pro 1.3 SDK for Microsoft .NET Framework.  These samples demonstrate the key functions of the Utility Network.
+
+* [Electric Distribution Load Report (C#)](https://github.com/ESRI/utility-network-sdk/tree/master/LoadReportSample)
 
 ##Requirements
 The requirements and supported software needed to develop utility network add-ins.
