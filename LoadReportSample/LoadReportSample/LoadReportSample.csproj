@@ -40,10 +40,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="ArcGIS.Desktop.NetworkAnalysis.Facility">
-      <HintPath>..\..\..\..\..\..\Program Files\ArcGIS\Pro\bin\Extensions\NetworkAnalysis\ArcGIS.Desktop.NetworkAnalysis.Facility.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\..\..\Program Files\ArcGIS\Pro\bin\Extensions\NetworkAnalysis\ArcGIS.Desktop.NetworkAnalysis.Facility.dll</HintPath>
     </Reference>
     <Reference Include="ArcGIS.Desktop.Shared.Wpf">
-      <HintPath>..\..\..\..\..\..\Program Files\ArcGIS\Pro\bin\ArcGIS.Desktop.Shared.Wpf.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\..\..\Program Files\ArcGIS\Pro\bin\ArcGIS.Desktop.Shared.Wpf.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />

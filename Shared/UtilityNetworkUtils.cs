@@ -46,16 +46,16 @@ namespace UtilityNetworkSamples
     // Note that when this routine is called on an edge with multiple elements, the first edge will be returned (Feature elements
     // do not provide a way to identify a particular edge)
 
-    public static NetworkElement GetNetworkElementFromGuidAndTerminalID(UtilityNetworkIndex utilityNetworkIndex, Guid globalID, int terminalID)
+    public static NetworkElement GetNetworkElementFromGuidAndTerminalID(UtilityNetworkTopology utilityNetworkTopology, Guid globalID, int terminalID)
     {
       // Get a list of the network elements that correspond to this guid
-      IReadOnlyList<NetworkElement> networkElements = utilityNetworkIndex.GetNetworkElements(globalID);
+      IReadOnlyList<NetworkElement> networkElements = utilityNetworkTopology.GetNetworkElements(globalID);
 
       // For each network element, convert to a feature element
       foreach (NetworkElement networkElement in networkElements)
       {
-        FeatureElement foundFeatureElement = utilityNetworkIndex.GetFeatureElement(networkElement);
-        if (foundFeatureElement.TerminalID == terminalID)
+        FeatureElement foundFeatureElement = utilityNetworkTopology.GetFeatureElement(networkElement);
+        if (foundFeatureElement.Terminal.ID == terminalID)
         {
           return networkElement;
         }

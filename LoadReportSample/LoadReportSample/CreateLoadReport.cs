@@ -57,9 +57,9 @@ namespace LoadReportSample
 
     private const string ElectricDistributionDeviceTableName = "ElectricDistributionDevice";
     private const string ServicePointSubtypeName = "ServicePoint";
-    private const string PhasesFieldName = "PHASES";
+    private const string PhasesFieldName = "PHASESNORMAL";
     private const string LoadFieldName = "SERVICECURRENTRATING";
-    private const string SubtypeNetworkAttributeName = "Asset type";
+    private const string SubtypeNetworkAttributeName = "Asset group";
 
 
 		/// <summary>
@@ -149,7 +149,7 @@ namespace LoadReportSample
 				using (FeatureClass electricDistributionDeviceFeatureClass = utilityNetworkGeodatabase.OpenDataset<FeatureClass>(ElectricDistributionDeviceTableName))
 				using (FeatureClassDefinition electricDistributionDeviceDefinition = utilityNetworkGeodatabase.GetDefinition<FeatureClassDefinition>(ElectricDistributionDeviceTableName))
 				using (UtilityNetwork utilityNetwork = UtilityNetworkUtils.GetUtilityNetworkFromGeodatabase(utilityNetworkGeodatabase))
-				using (UtilityNetworkIndex utilityNetworkIndex = utilityNetwork.GetNetworkIndex())
+				using (UtilityNetworkTopology utilityNetworkTopology = utilityNetwork.GetNetworkTopology())
 				using (UtilityNetworkDefinition utilityNetworkDefinition = utilityNetwork.GetDefinition())
 				using (Geodatabase defaultGeodatabase = new Geodatabase(Project.Current.DefaultGeodatabasePath))
 				{
@@ -163,7 +163,7 @@ namespace LoadReportSample
 
               // Convert starting point row into network element
 
-              NetworkElement startingPointNetworkElement = GetNetworkElementFromStartingPointRow(startingPointRow, utilityNetworkIndex);
+              NetworkElement startingPointNetworkElement = GetNetworkElementFromStartingPointRow(startingPointRow, utilityNetworkTopology);
 
               // Create analysis object
 
@@ -201,7 +201,7 @@ namespace LoadReportSample
 
               // Get the network source ID for the ElectricDistributionDevice table
 
-              long distributionDeviceSourceID = utilityNetworkDefinition.GetNetworkSource(ElectricDistributionDeviceTableName).GetNetworkSourceID();
+              long distributionDeviceSourceID = utilityNetworkDefinition.GetNetworkSource(ElectricDistributionDeviceTableName).GetID();
 
               // Get the subtype code for ServicePoint
 
@@ -218,12 +218,12 @@ namespace LoadReportSample
                 {
                   // Get feature element from network element and check the source ID. We only care about ElectricDisributionDevice features
 
-                  FeatureElement resultFeatureElement = utilityNetworkIndex.GetFeatureElement(resultNetworkElement);
-                  if (resultFeatureElement.SourceID == distributionDeviceSourceID)
+                  FeatureElement resultFeatureElement = utilityNetworkTopology.GetFeatureElement(resultNetworkElement);
+                  if (resultFeatureElement.NetworkSource.GetID() == distributionDeviceSourceID)
                   {
                     // Get subtype from the network element - we only care about features with the ServicePoint subtype
 
-                    NetworkFieldEvaluator evaluator = utilityNetworkIndex.GetNetworkEvaluator(resultNetworkElement, subtypeNetworkAttribute) as NetworkFieldEvaluator;
+                    FieldEvaluator evaluator = utilityNetworkTopology.GetNetworkEvaluator(resultNetworkElement, subtypeNetworkAttribute) as FieldEvaluator;
                     object vResultSubtypeCode = evaluator.Value;
                     long resultSubtypeCode = (long)vResultSubtypeCode;
                     if (resultSubtypeCode == servicePointSubtypeCode)
@@ -312,7 +312,7 @@ namespace LoadReportSample
 		/// </summary>
 		/// 
 
-    private NetworkElement GetNetworkElementFromStartingPointRow(Row startingPointRow, UtilityNetworkIndex utilityNetworkIndex)
+    private NetworkElement GetNetworkElementFromStartingPointRow(Row startingPointRow, UtilityNetworkTopology utilityNetworkTopology)
     {
 
       // Fetch the Guid, and TerminalID values from the starting point row
@@ -325,7 +325,7 @@ namespace LoadReportSample
 
       // Given a GlobalID and TerminalID, we can get a NetworkElement from the index
 
-      return UtilityNetworkUtils.GetNetworkElementFromGuidAndTerminalID(utilityNetworkIndex, globalID, terminalID);
+      return UtilityNetworkUtils.GetNetworkElementFromGuidAndTerminalID(utilityNetworkTopology, globalID, terminalID);
     }
 
 
