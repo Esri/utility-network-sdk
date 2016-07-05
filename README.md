@@ -20,6 +20,8 @@ This repository contains ArcGIS Pro Add-in Samples for the ArcGIS Pro 1.3 SDK fo
 
 * [Electric Distribution Load Report (C#)](https://github.com/esri/utility-network-sdk/tree/master/LoadReportSample)
 
+*To compile ArcGIS Pro SDK samples using ArcGIS Pro 1.3, you must set the Target framework in your Visual Studio project properties to ".NET Framework 4.6.1."*
+
 ##Documentation
 This repository also contains a UtilityNetworkSDK.chm file.  This contains an API reference for this alpha release.  Utility Network classes are contained within the ArcGIS.Core.Internal.Data.UtilityNetwork namespace (post-ship, they will move to ArcGIS.Core.Data.UtilityNetwork).  This API reference is not yet complete, and will evolve over time.  For classes outside of the utility network, we recommend you continue to use the [official documentation](http://pro.arcgis.com/en/pro-app/sdk/api-reference/#topic1.html).
 
