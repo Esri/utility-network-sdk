@@ -32,8 +32,6 @@ The requirements and supported software needed to develop utility network add-in
 * ArcGIS Pro set up for the ArcGIS Pro 1.3 Utility Network Alpha release
 * ArcGIS Pro SDK for .Net
 
-*Note that there is no alpha release of the ArcGIS Pro SDK 1.3.  The SDK for ArcGIS Pro 1.2 works fine with 1.3 pre-releases.*
-
 ####Supported Platforms
 * Windows 8.1 Basic, Professional, and Enterprise (64 bit [EM64T]) 
 * Windows 8 Basic, Professional, and Enterprise (64 bit [EM64T]) 
@@ -50,7 +48,7 @@ The requirements and supported software needed to develop utility network add-in
 * [ArcGIS Pro 1.3 Utility Network Alpha 8](https://earlyadopter.esri.com/project/version/item.html?cap=2578B1991F9E43C7B114BD1BB37462C9&arttypeid={13C846C4-9434-4B46-A34C-97D3F4DBCDF3}&artid={B3E549B4-E69A-49A7-8388-942E6543ABA4}) 
 * [Installing ArcGIS Pro SDK](https://github.com/Esri/arcgis-pro-sdk#installing-arcgis-pro-sdk-for-net)
 * [Building add-ins for ArcGIS Pro](https://github.com/Esri/arcgis-pro-sdk/wiki/ProGuide-Build-your-first-add-in)
-* [ArcGIS Pro 1.2 API Reference Guide](http://pro.arcgis.com/en/pro-app/sdk/api-reference/#topic1.html)
+* [ArcGIS Pro 1.3 API Reference Guide](http://pro.arcgis.com/en/pro-app/sdk/api-reference/#topic1.html)
 
 ##Known Issues
 * [ArcGIS Pro SDK known issues](https://github.com/Esri/arcgis-pro-sdk#known-issues)
