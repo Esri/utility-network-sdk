@@ -55,7 +55,15 @@ namespace UtilityNetworkSamples
       foreach (NetworkElement networkElement in networkElements)
       {
         FeatureElement foundFeatureElement = utilityNetworkTopology.GetFeatureElement(networkElement);
-        if (foundFeatureElement.Terminal.ID == terminalID)
+        if (foundFeatureElement.Terminal == null)
+        {
+          // We have an edge.  If we asked for an edge, we've found our network element
+          if (terminalID == -1)
+          {
+            return networkElement;
+          }
+        }
+        else if (foundFeatureElement.Terminal.ID == terminalID)
         {
           return networkElement;
         }
@@ -67,7 +75,7 @@ namespace UtilityNetworkSamples
 		// This routine might be added to future versions of the SDK
 		public static NetworkAttribute GetNetworkAttributeByName(UtilityNetworkDefinition utilityNetworkDefinition, string name)
 		{
-			return utilityNetworkDefinition.GetNetworkAttributes().First(x => x.GetName() == name);
+			return utilityNetworkDefinition.GetNetworkAttributes().First(x => x.Name == name);
 		}
 
 		// GetSubtypeByName - returns a subtype with the given name

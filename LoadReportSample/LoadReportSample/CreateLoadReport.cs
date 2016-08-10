@@ -196,12 +196,12 @@ namespace LoadReportSample
               }
 
               // Get a NetworkEvaluator to get the subtype from network elements in the resultset
-
+              
               NetworkAttribute subtypeNetworkAttribute = UtilityNetworkUtils.GetNetworkAttributeByName(utilityNetworkDefinition, SubtypeNetworkAttributeName);
 
               // Get the network source ID for the ElectricDistributionDevice table
 
-              long distributionDeviceSourceID = utilityNetworkDefinition.GetNetworkSource(ElectricDistributionDeviceTableName).GetID();
+              long distributionDeviceSourceID = utilityNetworkDefinition.GetNetworkSource(ElectricDistributionDeviceTableName).ID;
 
               // Get the subtype code for ServicePoint
 
@@ -219,7 +219,7 @@ namespace LoadReportSample
                   // Get feature element from network element and check the source ID. We only care about ElectricDisributionDevice features
 
                   FeatureElement resultFeatureElement = utilityNetworkTopology.GetFeatureElement(resultNetworkElement);
-                  if (resultFeatureElement.NetworkSource.GetID() == distributionDeviceSourceID)
+                  if (resultFeatureElement.NetworkSource.ID == distributionDeviceSourceID)
                   {
                     // Get subtype from the network element - we only care about features with the ServicePoint subtype
 
