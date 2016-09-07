@@ -167,6 +167,7 @@ namespace LoadReportSample
 
               // Create analysis object
 
+              // SPECIAL NOTE: The following line will crash with Alpha 10 of the Utility Network.  Tracing functionality will be restored in the next alpha.
               ElectricAnalyst analyst = utilityNetwork.CreateAnalysis(UtilityNetworkDomainType.ElectricDistribution) as ElectricAnalyst;
               if (analyst == null)
               {
@@ -335,77 +336,24 @@ namespace LoadReportSample
 		/// This routine takes a set of GlobalIDs representing service points.  We fetch those rows and add the loads and customer counts to our results
 		/// 
 		/// </summary>
-		/// <remarks>
-		///	
-		/// We will be using an I clause to fetch ServicePoint features from the list of Guids.
-		/// Oracle limits the number of elements that can be passed to a single IN clause.  This routine breaks up our initial Guid list into subsets and issues multiple queries to get around this limitation.
-		/// 
-		/// Future versions of the SDK will provide an easier way to accomplish this
-		/// </remarks>
 
     private void AccumulateDataFromServicePoints(Geodatabase utilityNetworkGeodatabase, FeatureClass electricDistributionDeviceFeatureClass, FeatureClassDefinition electricDistributionDeviceDefintion, List<Guid> globalIDList, ref LoadTraceResults results)
     {
-
-      const int SubsetSize = 1000;
-
-      int startingIndex = 0;
-      int remainingCount = globalIDList.Count;
-
-      while (remainingCount > 0)
-      {
-        int numToCopy = System.Math.Min(remainingCount, SubsetSize);
-        List<Guid> guidSubset = globalIDList.GetRange(startingIndex, numToCopy);
-
-        FetchCountAndLoadPerPhase(utilityNetworkGeodatabase, electricDistributionDeviceFeatureClass, electricDistributionDeviceDefintion, guidSubset, ref results);
-
-        startingIndex += numToCopy;
-        remainingCount -= numToCopy;
-      }
-    }
-
-
-		/// <summary>
-		/// FetchCountAndLoadPerPhase
-		/// 
-		/// This routine builds our query to fetch rows from the ServicePoint feature class.  We then read the Phases and Load fields and use those to accumulate our results
-		/// 
-		/// </summary>
-		
-    private void FetchCountAndLoadPerPhase(Geodatabase utilityNetworkGeodatabase, FeatureClass electricDistributionDeviceFeatureClass, FeatureClassDefinition electricDistributionDeviceDefinition, List<Guid> globalIDList, ref LoadTraceResults results)
-    {
-
       // If we have a empty list of Global IDs, we can exit now.
 
-      if (globalIDList.Count == 0) 
-			{
-				return;
-			}
-
-      // build IN clause with a list of our global ids
-
-      StringBuilder globalIDListStringBuilder = new StringBuilder(" IN (");
-      bool first = true;
-      foreach (Guid guid in globalIDList)
+      if (globalIDList.Count == 0)
       {
-        if (!first)
-        {
-          globalIDListStringBuilder.Append(", ");
-        }
-        globalIDListStringBuilder.AppendFormat("'{0}'", guid.ToString("B").ToUpper());
-        first = false;
+        return;
       }
-      globalIDListStringBuilder.Append(")");
 
-      // Create a query filter
+      // Create a selection from our list of GlobalID's
 
-      QueryFilter queryFilter = new QueryFilter
-      {
-        WhereClause = electricDistributionDeviceDefinition.GetGlobalIDField() + globalIDListStringBuilder.ToString()
-      };
+      Selection servicePointSelection = electricDistributionDeviceFeatureClass.Select(null, SelectionType.GlobalID, SelectionOption.Empty);
+      servicePointSelection.Add(globalIDList);
 
       // Fetch the features
 
-      using (RowCursor rowCursor = electricDistributionDeviceFeatureClass.Search(queryFilter))
+      using (RowCursor rowCursor = servicePointSelection.Search())
       {
         while (rowCursor.MoveNext())
         {
