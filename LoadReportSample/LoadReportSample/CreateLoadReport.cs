@@ -17,7 +17,9 @@ using System.Text;
 using System.Threading.Tasks;
 using ArcGIS.Core.Data;
 using ArcGIS.Core.Internal.Data.UtilityNetwork;
+using ArcGIS.Core.Internal.Data.UtilityNetwork.Trace;
 using ArcGIS.Desktop.Core;
+using ArcGIS.Desktop.Core.Geoprocessing;
 using ArcGIS.Desktop.Framework;
 using ArcGIS.Desktop.Framework.Contracts;
 using ArcGIS.Desktop.Framework.Dialogs;
@@ -55,21 +57,27 @@ namespace LoadReportSample
 
 		// Constants - used with the Esri Electric Distribution Data Model
 
-    private const string ElectricDistributionDeviceTableName = "ElectricDistributionDevice";
-    private const string ServicePointSubtypeName = "ServicePoint";
-    private const string PhasesFieldName = "PHASESNORMAL";
-    private const string LoadFieldName = "SERVICECURRENTRATING";
-    private const string SubtypeNetworkAttributeName = "Asset group";
+    private const string ServicePointCategory = "ServicePoint";
+    private const string DeviceStatusAttributeName = "Device Status";
 
+    private const short DeviceStatusOpened = 0;
+    private const short DeviceStatusClosed = 1;
 
-		/// <summary>
-		/// OnClick
-		/// 
-		/// This is the implementation of our button.  We pass the selected layer to GenerateReport() which does the bulk of the work.
-		/// We then display the results, along with error messages, in a MessageBox.
-		/// 
-		/// </summary>
-		
+    private const string PhasesAttributeName = "PHASESNORMAL";
+    private const string LoadAttributeName = "Load";
+
+    private const short APhase = 4;
+    private const short BPhase = 2;
+    private const short CPhase = 1;
+
+    /// <summary>
+    /// OnClick
+    /// 
+    /// This is the implementation of our button.  We pass the selected layer to GenerateReport() which does the bulk of the work.
+    /// We then display the results, along with error messages, in a MessageBox.
+    /// 
+    /// </summary>
+
     protected override void OnClick()
     {
 			// Start by checking to make sure we have a single feature layer selected
@@ -96,7 +104,7 @@ namespace LoadReportSample
         return;
       }
 
-			// Generate our report.  The LoadTraceResults class is used to pass back results from the worker thread to the UI thread that we're currently executing.
+      // Generate our report.  The LoadTraceResults class is used to pass back results from the worker thread to the UI thread that we're currently executing.
 
       Task<LoadTraceResults> task = GenerateReport(mapViewEventArgs.MapView.GetSelectedLayers()[0] as FeatureLayer);
       LoadTraceResults traceResults = task.Result;
@@ -146,13 +154,12 @@ namespace LoadReportSample
 				// Initialize a number of geodatabase objects
 
 				using (Geodatabase utilityNetworkGeodatabase = utilityNetworkFeatureLayer.GetFeatureClass().GetDatastore() as Geodatabase)
-				using (FeatureClass electricDistributionDeviceFeatureClass = utilityNetworkGeodatabase.OpenDataset<FeatureClass>(ElectricDistributionDeviceTableName))
-				using (FeatureClassDefinition electricDistributionDeviceDefinition = utilityNetworkGeodatabase.GetDefinition<FeatureClassDefinition>(ElectricDistributionDeviceTableName))
 				using (UtilityNetwork utilityNetwork = UtilityNetworkUtils.GetUtilityNetworkFromGeodatabase(utilityNetworkGeodatabase))
 				using (UtilityNetworkTopology utilityNetworkTopology = utilityNetwork.GetNetworkTopology())
 				using (UtilityNetworkDefinition utilityNetworkDefinition = utilityNetwork.GetDefinition())
-				using (Geodatabase defaultGeodatabase = new Geodatabase(Project.Current.DefaultGeodatabasePath))
-				{
+        using (Geodatabase defaultGeodatabase = new Geodatabase(Project.Current.DefaultGeodatabasePath))
+        using (TraceManager traceManager = utilityNetwork.GetTraceManager())
+        {
           // Get a row from the starting points table in the default project workspace.  This table is created the first time the user creates a starting point
           // If the table is missing or empty, a null row is returned
 
@@ -165,81 +172,107 @@ namespace LoadReportSample
 
               NetworkElement startingPointNetworkElement = GetNetworkElementFromStartingPointRow(startingPointRow, utilityNetworkTopology);
 
-              // Create analysis object
+              // Obtain a tracer object
 
-              // SPECIAL NOTE: The following line will crash with Alpha 10 of the Utility Network.  Tracing functionality will be restored in the next alpha.
-              ElectricAnalyst analyst = utilityNetwork.CreateAnalysis(UtilityNetworkDomainType.ElectricDistribution) as ElectricAnalyst;
-              if (analyst == null)
-              {
-                results.Message += "Please choose an electric network.\n";
-                results.Success = false;
-                return results;
-              }
+              DownstreamTracer downstreamTracer = traceManager.GetTracer<DownstreamTracer>();
 
-              // Set our starting point
+              // Get the network attributes that we will use in our trace
 
-              List<NetworkElement> startingPointList = new List<NetworkElement>();
-              startingPointList.Add(startingPointNetworkElement);
-              analyst.AddStartingPoints(startingPointList);
+              NetworkAttribute phasesNetworkAttribute = utilityNetworkDefinition.GetNetworkAttribute(PhasesAttributeName);
+              NetworkAttribute loadNetworkAttribute = utilityNetworkDefinition.GetNetworkAttribute(LoadAttributeName);
+              NetworkAttribute deviceStatusNetworkAttribute = utilityNetworkDefinition.GetNetworkAttribute(DeviceStatusAttributeName);
 
-              // Trace downstream from starting network element
+              // Set up our traversal filters
 
-              IReadOnlyList<NetworkElement> traceResults;
+              Filter deviceStatusFilter = new NetworkAttributeFilter(deviceStatusNetworkAttribute, FilterOperator.Equal, DeviceStatusClosed);
+              Filter aPhaseFilter = new And(deviceStatusFilter, new NetworkAttributeFilter(phasesNetworkAttribute, FilterOperator.BitwiseAnd, APhase));
+              Filter bPhaseFilter = new And(deviceStatusFilter, new NetworkAttributeFilter(phasesNetworkAttribute, FilterOperator.BitwiseAnd, BPhase));
+              Filter cPhaseFilter = new And(deviceStatusFilter, new NetworkAttributeFilter(phasesNetworkAttribute, FilterOperator.BitwiseAnd, CPhase));
+
+              // Create function to add up loads on service points
+
+              Function sumServicePointLoadFunction = new Sum(loadNetworkAttribute);
+
+              // Create trace configuration object
+
+              TraceConfiguration traceConfiguration = new TraceConfiguration();
+              traceConfiguration.OutputCategories = new List<string>() { ServicePointCategory };
+              traceConfiguration.Functions = new List<Function>() { sumServicePointLoadFunction };
+
+              // Create starting point list and trace argument object
+
+              List<NetworkElement> startingPointList = new List<NetworkElement>() { startingPointNetworkElement };
+              TraceArgument traceArgument = new TraceArgument(startingPointList);
+
+              // Execute the trace on A phase
+
+              traceConfiguration.TraversalFilter = aPhaseFilter;
+              traceArgument.Configuration = traceConfiguration;
               try
               {
-                traceResults = analyst.TraceDownstream();
-              }
-              catch (Exception)
-              {
-                results.Message += "Trace failed.  Please make sure to place on a starting point on a feature that belongs to a circuit.\n";
-                results.Success = false;
-                return results;
-              }
-
-              // Get a NetworkEvaluator to get the subtype from network elements in the resultset
-              
-              NetworkAttribute subtypeNetworkAttribute = UtilityNetworkUtils.GetNetworkAttributeByName(utilityNetworkDefinition, SubtypeNetworkAttributeName);
-
-              // Get the network source ID for the ElectricDistributionDevice table
-
-              long distributionDeviceSourceID = utilityNetworkDefinition.GetNetworkSource(ElectricDistributionDeviceTableName).ID;
-
-              // Get the subtype code for ServicePoint
-
-              IReadOnlyList<Subtype> subtypeList = electricDistributionDeviceDefinition.GetSubtypes();
-              int servicePointSubtypeCode = UtilityNetworkUtils.GetSubtypeByName(electricDistributionDeviceDefinition, ServicePointSubtypeName).GetCode();
-
-              // loop through the trace results, building a list of GlobalIDs of the service points that are returned from the trace
-              // We first filter by junctions, then by feature class, then by subtype
-
-              List<Guid> globalIDList = new List<Guid>();
-              foreach (NetworkElement resultNetworkElement in traceResults)
-              {
-                if (resultNetworkElement.Type == ElementType.Junction)
+                TraceResult resultsA = downstreamTracer.Trace(traceArgument);
+                results.NumberServicePointsA = resultsA.TraceOutput.Count;
+                if (resultsA.FunctionOutput.Count > 0)
                 {
-                  // Get feature element from network element and check the source ID. We only care about ElectricDisributionDevice features
-
-                  FeatureElement resultFeatureElement = utilityNetworkTopology.GetFeatureElement(resultNetworkElement);
-                  if (resultFeatureElement.NetworkSource.ID == distributionDeviceSourceID)
-                  {
-                    // Get subtype from the network element - we only care about features with the ServicePoint subtype
-
-                    FieldEvaluator evaluator = utilityNetworkTopology.GetNetworkEvaluator(resultNetworkElement, subtypeNetworkAttribute) as FieldEvaluator;
-                    object vResultSubtypeCode = evaluator.Value;
-                    long resultSubtypeCode = (long)vResultSubtypeCode;
-                    if (resultSubtypeCode == servicePointSubtypeCode)
-                    {
-                      // We've found a ServicePoint.  Add its GlobalID to our list of features to fetch
-
-                      globalIDList.Add(resultFeatureElement.GlobalID);
-                    }
-                  }
+                  results.TotalLoadA = (double)resultsA.FunctionOutput.First().GlobalValue;
+                }
+              }
+              catch (ArcGIS.Core.Data.GeodatabaseUtilityNetworkException e)
+              {
+                //No A phase connectivity to source
+                if (!e.Message.Equals("No subnetwork source was discovered.") )
+                {
+                  results.Success = false;
+                  results.Message += e.Message;
                 }
               }
 
-              // Fetch the service point features to get the count and load per phase
+              // Execute the trace on B phase
 
-              AccumulateDataFromServicePoints(utilityNetworkGeodatabase, electricDistributionDeviceFeatureClass, electricDistributionDeviceDefinition, globalIDList, ref results);
+              traceConfiguration.TraversalFilter = bPhaseFilter;
+              traceArgument.Configuration = traceConfiguration;
+
+              try
+              {
+                TraceResult resultsB = downstreamTracer.Trace(traceArgument);
+                results.NumberServicePointsB = resultsB.TraceOutput.Count;
+                if (resultsB.FunctionOutput.Count > 0)
+                {
+                  results.TotalLoadB = (double)resultsB.FunctionOutput.First().GlobalValue;
+                }
+              }
+              catch (ArcGIS.Core.Data.GeodatabaseUtilityNetworkException e)
+              {
+                // No B phase connectivity to source
+                if (!e.Message.Equals("No subnetwork source was discovered."))
+                {
+                  results.Success = false;
+                  results.Message += e.Message;
+                }
+              }
+
+              // Execute the trace on C phase
+
+              traceConfiguration.TraversalFilter = cPhaseFilter;
+              traceArgument.Configuration = traceConfiguration;
+              try
+              {
+                TraceResult resultsC = downstreamTracer.Trace(traceArgument);
+                results.NumberServicePointsC = resultsC.TraceOutput.Count;
+                if (resultsC.FunctionOutput.Count > 0)
+                {
+                  results.TotalLoadC = (double)resultsC.FunctionOutput.First().GlobalValue;
+                }
+              }
+              catch (ArcGIS.Core.Data.GeodatabaseUtilityNetworkException e)
+              {
+                // No C phase connectivity to source
+                if (!e.Message.Equals("No subnetwork source was discovered."))
+                {
+                  results.Success = false;
+                  results.Message += e.Message;
+                }
+              }       
             }
 
             // append success message to the output string
@@ -247,7 +280,7 @@ namespace LoadReportSample
             results.Message += "Trace successful.";
             results.Success = true;
           }
-				}
+        }
 				return results;
 			});
 		}
@@ -328,92 +361,6 @@ namespace LoadReportSample
 
       return UtilityNetworkUtils.GetNetworkElementFromGuidAndTerminalID(utilityNetworkTopology, globalID, terminalID);
     }
-
-
-		/// <summary>
-		/// AccumulateDataFromServicePoints
-		/// 
-		/// This routine takes a set of GlobalIDs representing service points.  We fetch those rows and add the loads and customer counts to our results
-		/// 
-		/// </summary>
-
-    private void AccumulateDataFromServicePoints(Geodatabase utilityNetworkGeodatabase, FeatureClass electricDistributionDeviceFeatureClass, FeatureClassDefinition electricDistributionDeviceDefintion, List<Guid> globalIDList, ref LoadTraceResults results)
-    {
-      // If we have a empty list of Global IDs, we can exit now.
-
-      if (globalIDList.Count == 0)
-      {
-        return;
-      }
-
-      // Create a selection from our list of GlobalID's
-
-      Selection servicePointSelection = electricDistributionDeviceFeatureClass.Select(null, SelectionType.GlobalID, SelectionOption.Empty);
-      servicePointSelection.Add(globalIDList);
-
-      // Fetch the features
-
-      using (RowCursor rowCursor = servicePointSelection.Search())
-      {
-        while (rowCursor.MoveNext())
-        {
-          using (Feature servicePointFeature = rowCursor.Current as Feature)
-          {
-
-            // get phase from service point
-
-            object vPhase = servicePointFeature[PhasesFieldName];
-            short phase = (short)vPhase;
-
-            // Get load from service point - use "Service Current Rating" attribute
-            // IMPORTANT NOTE: Our data model does not currently include this field.  Defaulting to 200A for now
-            // object vLoad = servicePointFeature[LoadFieldName];
-            // int load = (int)vLoad;
-
-            int load = 200;
-
-            // increase count and total load per phase
-
-            if (IsPhaseEnabled(phase, APhase))
-            {
-              results.NumberServicePointsA++;
-              results.TotalLoadA += load;
-            }
-            if (IsPhaseEnabled(phase, BPhase))
-            {
-              results.NumberServicePointsB++;
-              results.TotalLoadB += load;
-            }
-            if (IsPhaseEnabled(phase, CPhase))
-            {
-              results.NumberServicePointsC++;
-              results.TotalLoadC += load;
-            }
-          }
-        }
-      }
-    }
-
-
-		/// <summary>
-		/// Phase bitmap
-		/// 
-		/// Our Phases field uses a bitmap to encode which phases are present.
-		/// This routine and set of constants are used to check for the presence of a particular phase
-		/// 
-		/// </summary>
-
-		private const short APhase = 2;
-		private const short BPhase = 1;
-		private const short CPhase = 0;
-
-		private bool IsPhaseEnabled(short s, int pos)
-		{
-			return (s & (1 << pos)) != 0;
-		}
-
-
-
   }
 }
 

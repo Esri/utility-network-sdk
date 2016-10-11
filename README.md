@@ -18,14 +18,15 @@ The SDK described here will evolve based upon user feedback and the evolution of
 ##Samples
 This repository contains ArcGIS Pro Add-in Samples for the ArcGIS Pro 1.4 SDK for Microsoft .NET Framework.  These samples demonstrate the key functions of the Utility Network.
 
-* [Electric Distribution Load Report (C#)](https://github.com/esri/utility-network-sdk/tree/master/LoadReportSample)  **Note that this sample does not work with Alpha 10.  This functionality will be restored in a subsequent alpha release.**
+* [Electric Distribution Load Report (C#)](https://github.com/esri/utility-network-sdk/tree/master/LoadReportSample) 
 
 *To compile ArcGIS Pro SDK samples using ArcGIS Pro 1.4, you must set the Target framework in your Visual Studio project properties to ".NET Framework 4.6.1."*
 
 ##Documentation
-**New in Alpha 10!**  This repository contains a PowerPoint describing the major classes inside the Utility Network SDK.  While the SDK is still evolving, this document is up-to-date with the SDK that shipped with Alpha 10.
+This repository contains two important documents.
 
-This repository also contains a UtilityNetworkSDK.chm file.  This contains an API reference for this alpha release.  Utility Network classes are contained within the ArcGIS.Core.Internal.Data.UtilityNetwork namespace (post-ship, they will move to ArcGIS.Core.Data.UtilityNetwork).  This API reference is not yet complete, and will evolve over time.  For classes outside of the utility network, we recommend you continue to use the [official documentation](http://pro.arcgis.com/en/pro-app/sdk/api-reference/#topic1.html).
+- [Utility Network SDK Alpha 11.pptx](https://github.com/Esri/utility-network-sdk/blob/master/Utility%20Network%20SDK%20Alpha%2011.pptx).  This PowerPoint describes the major classes inside the Utility Network SDK.  While the SDK is still evolving, this document is up-to-date with the SDK.
+- [Utility Network SDK.chm](https://github.com/Esri/utility-network-sdk/blob/master/Utility%20Network%20SDK.chm).  This contains an API reference for this alpha release.  Utility Network classes are contained within the ArcGIS.Core.Internal.Data.UtilityNetwork namespace (post-ship, they will move to ArcGIS.Core.Data.UtilityNetwork).  This API reference is not yet complete, and will evolve over time.  For classes outside of the utility network, we recommend you continue to use the [official documentation](http://pro.arcgis.com/en/pro-app/sdk/api-reference/#topic1.html).
 
 ##Requirements
 The requirements and supported software needed to develop utility network add-ins.
@@ -47,10 +48,15 @@ The requirements and supported software needed to develop utility network add-in
 * Visual Studio 2013 (Professional, Premium, Ultimate, and Community Editions)
 
 ##Resources
-* [ArcGIS Pro 1.4 Utility Network Alpha 10](https://earlyadopter.esri.com/project/version/item.html?cap=2578B1991F9E43C7B114BD1BB37462C9&arttypeid={13C846C4-9434-4B46-A34C-97D3F4DBCDF3}&artid={8206B490-1BD2-4F83-ACBA-C06BB9BE4168}) 
+* [ArcGIS Pro 1.4 Utility Network Alpha 11](https://earlyadopter.esri.com/project/version/item.html?cap=2578B1991F9E43C7B114BD1BB37462C9&arttypeid={13C846C4-9434-4B46-A34C-97D3F4DBCDF3}&artid={DA61524D-4B55-4BF5-B446-1542014517C3}) 
 * [Installing ArcGIS Pro SDK](https://github.com/Esri/arcgis-pro-sdk#installing-arcgis-pro-sdk-for-net)
 * [Building add-ins for ArcGIS Pro](https://github.com/Esri/arcgis-pro-sdk/wiki/ProGuide-Build-your-first-add-in)
 * [ArcGIS Pro 1.3 API Reference Guide](http://pro.arcgis.com/en/pro-app/sdk/api-reference/#topic1.html).  Note that the Pro API Reference Guide has not yet been updated for 1.4.
 
 ##Known Issues
-* Tracing does not work in the Alpha 10 SDK.
+* While all of the SDK is subject to change, the following areas will be significantly changed in future releases:
+	- Terminals
+	- Subnetwork management
+	- Network Topology
+
+

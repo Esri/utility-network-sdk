@@ -1,11 +1,8 @@
 ##LoadReportSample
 
-This addin demonstrates the creation of a simple electric distribution report.  It traces downstream from a given point and adds up the count of customers and total load per phase.  This sample
-is meant to be a demonstration on how to use the Utility Network portions of the SDK.  The report display is rudimentary.  Look elsewhere in the SDK for better examples on how to display data.
+This addin demonstrates the creation of a simple electric distribution report.  It traces downstream from a given point and adds up the count of customers and total load per phase.  This sample is meant to be a demonstration on how to use the Utility Network portions of the SDK.  The report display is rudimentary.  Look elsewhere in the SDK for better examples on how to display data.
 
-Rather than coding special logic to pick a starting point, this sample leverages the existing Set Trace Locations tool that is included with the product.
-That tool writes rows to a table called UN_Temp_Starting_Points, which is stored in the default project workspace.  This sample reads rows from that table and uses them as starting points
-for our downstream trace.
+Rather than coding special logic to pick a starting point, this sample leverages the existing Set Trace Locations tool that is included with the product.  This tool writes rows to a table called UN_Temp_Starting_Points, which is stored in the default project workspace.  This sample reads rows from that table and uses them as starting points for our downstream trace.
 
 
 <a href="http://pro.arcgis.com/en/pro-app/sdk/" target="_blank">View it live</a>
@@ -16,8 +13,8 @@ Language:      C#
 Subject:       Utility Network
 Contributor:   ArcGIS Pro SDK Team <arcgisprosdk@esri.com>
 Organization:  Esri, http://www.esri.com
-Date:          5/31/2016
-ArcGIS Pro:    1.3
+Date:          10/10/2016
+ArcGIS Pro:    1.4
 Visual Studio: 2013, 2015
 ```
 
@@ -33,6 +30,9 @@ Visual Studio: 2013, 2015
 * [Sample data for ArcGIS Pro SDK Community Samples](https://github.com/Esri/arcgis-pro-sdk-community-samples/releases)
 
 ![ArcGIS Pro SDK for .NET Icons](http://esri.github.io/arcgis-pro-sdk/images/Home/Image-of-icons.png "ArcGIS Pro SDK Icons")
+
+##Preparing Data
+This sample requires a database configured in a special way.  Start with the Naperville sample data provided with the utility network early adopter program.  Then run the ConfigureLoadReportData.py script included in this repository.  This will add the necessary fields, network attributes, and categories required to run the sample.
 
 ##How to use the sample
 <!-- TODO: Explain how this sample can be used. To use images in this section, create the image file in your sample project's screenshots folder. Use relative url to link to this image using this syntax: ![My sample Image](FacePage/SampleImage.png) -->

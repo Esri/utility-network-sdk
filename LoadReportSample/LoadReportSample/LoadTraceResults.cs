@@ -36,9 +36,9 @@ namespace LoadReportSample
     public int NumberServicePointsA { get; set; }
     public int NumberServicePointsB { get; set; }
     public int NumberServicePointsC { get; set; }
-    public int TotalLoadA { get; set; }
-    public int TotalLoadB { get; set; }
-    public int TotalLoadC { get; set; }
+    public double TotalLoadA { get; set; }
+    public double TotalLoadB { get; set; }
+    public double TotalLoadC { get; set; }
     public string Message { get; set; }
   }
 }
