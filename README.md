@@ -25,7 +25,7 @@ This repository contains ArcGIS Pro Add-in Samples for the ArcGIS Pro 1.4 SDK fo
 ##Documentation
 This repository contains two important documents.
 
-- [Utility Network SDK Alpha 11.pptx](https://github.com/Esri/utility-network-sdk/blob/master/Utility%20Network%20SDK%20Alpha%2011.pptx).  This PowerPoint describes the major classes inside the Utility Network SDK.  While the SDK is still evolving, this document is up-to-date with the SDK.
+- [Utility Network SDK Alpha 12.pptx](https://github.com/Esri/utility-network-sdk/blob/master/Utility%20Network%20SDK%20Alpha%2012.pptx).  This PowerPoint describes the major classes inside the Utility Network SDK.  While the SDK is still evolving, this document is up-to-date with the SDK.
 - [Utility Network SDK.chm](https://github.com/Esri/utility-network-sdk/blob/master/Utility%20Network%20SDK.chm).  This contains an API reference for this alpha release.  Utility Network classes are contained within the ArcGIS.Core.Internal.Data.UtilityNetwork namespace (post-ship, they will move to ArcGIS.Core.Data.UtilityNetwork).  This API reference is not yet complete, and will evolve over time.  For classes outside of the utility network, we recommend you continue to use the [official documentation](http://pro.arcgis.com/en/pro-app/sdk/api-reference/#topic1.html).
 
 ##Requirements
@@ -48,7 +48,7 @@ The requirements and supported software needed to develop utility network add-in
 * Visual Studio 2013 (Professional, Premium, Ultimate, and Community Editions)
 
 ##Resources
-* [ArcGIS Pro 1.4 Utility Network Alpha 11](https://earlyadopter.esri.com/project/version/item.html?cap=2578B1991F9E43C7B114BD1BB37462C9&arttypeid={13C846C4-9434-4B46-A34C-97D3F4DBCDF3}&artid={DA61524D-4B55-4BF5-B446-1542014517C3}) 
+* [ArcGIS Pro 1.4 Utility Network Alpha 11](https://earlyadopter.esri.com/project/version/item.html?cap=2578B1991F9E43C7B114BD1BB37462C9&arttypeid={13C846C4-9434-4B46-A34C-97D3F4DBCDF3}&artid={4AA7D953-7D17-465A-83FE-15C75185EF33}) 
 * [Installing ArcGIS Pro SDK](https://github.com/Esri/arcgis-pro-sdk#installing-arcgis-pro-sdk-for-net)
 * [Building add-ins for ArcGIS Pro](https://github.com/Esri/arcgis-pro-sdk/wiki/ProGuide-Build-your-first-add-in)
 * [ArcGIS Pro 1.3 API Reference Guide](http://pro.arcgis.com/en/pro-app/sdk/api-reference/#topic1.html).  Note that the Pro API Reference Guide has not yet been updated for 1.4.
@@ -56,6 +56,7 @@ The requirements and supported software needed to develop utility network add-in
 ##Known Issues
 * While all of the SDK is subject to change, the following areas will be significantly changed in future releases:
 	- Terminals
+	- Tier
 	- Subnetwork management
 	- Network Topology
 
