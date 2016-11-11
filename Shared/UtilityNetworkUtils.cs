@@ -23,17 +23,28 @@ namespace UtilityNetworkSamples
 {
   class UtilityNetworkUtils
   {
-    // GetUtilityNetwork - gets a utility network from a geodatabase
-    // Direct support for this functionality will eventually be added to the SDK
 
-    public static UtilityNetwork GetUtilityNetworkFromGeodatabase(Geodatabase geodatabase)
+    /// <summary>
+    /// GetUtilityNetworkFromFeatureClass - gets a utility network from a feature class
+    /// </summary>
+    /// <remarks>
+    /// A feature class can belong to multiple controller datasets, but at most one of them will be a UtilityNetwork.
+    /// </remarks>
+    /// <param name="featureClass"></param>
+    /// <returns>a UtilityNetwork object, or null if the feature class does not belong to a utility network</returns>
+   
+    public static UtilityNetwork GetUtilityNetworkFromFeatureClass(FeatureClass featureClass)
     {
-      IReadOnlyList<UtilityNetworkDefinition> listUtilityNetworkDefinitions = geodatabase.GetDefinitions<UtilityNetworkDefinition>();
-      if (listUtilityNetworkDefinitions.Count == 1)
+      if (featureClass.IsControllerDatasetSupported())
       {
-        UtilityNetworkDefinition utilityNetworkDefinition = listUtilityNetworkDefinitions[0];
-        UtilityNetwork utilityNetwork = geodatabase.OpenDataset<UtilityNetwork>(utilityNetworkDefinition.GetName());
-        return utilityNetwork;
+        IReadOnlyList<Dataset> controllerDatasets = featureClass.GetControllerDatasets();
+        foreach (Dataset controllerDataset in controllerDatasets)
+        {
+          if (controllerDataset is UtilityNetwork)
+          {
+            return controllerDataset as UtilityNetwork;
+          }
+        }
       }
       return null;
     }

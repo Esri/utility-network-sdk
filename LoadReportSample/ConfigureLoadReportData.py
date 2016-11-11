@@ -3,9 +3,8 @@
 # This script should be run against a Naperville sample database
 # It configures the database and utility network to have the necessary fields, network attributes, and categories
 # to run the Create Load Report SDK sample
-#
-# IMPORTANT NOTE: In Alpha 11, there is a bug that causes the call to AddField to crash if the ElectricDistributionDevice feature class is included
-#   in any maps of your current ArcGIS Pro project
+
+import arcpy
 
 # Parameters
 
@@ -27,7 +26,7 @@ arcpy.un.DisableNetworkTopology(utilityNetwork)
 
 # Add a Load field to the Device table
 arcpy.AddMessage("Adding field to device table")
-arcpy.management.AddField(electricDistributionDeviceFeatureClass, LoadField, "LONG", None, None, None, LoadFieldAlias, "NULLABLE", "NON_REQUIRED", None)
+arcpy.management.AddField(electricDistributionDeviceFeatureClass, LoadField, "SHORT", None, None, None, LoadFieldAlias, "NULLABLE", "NON_REQUIRED", None)
 
 # Populate the Load field with some sample values (200mA)
 arcpy.AddMessage("Populating field in device table")
@@ -35,7 +34,7 @@ arcpy.management.CalculateField(electricDistributionDeviceFeatureClass, LoadFiel
 
 # Create a Network Attribute to represent Load
 arcpy.AddMessage("Creating network attribute")
-arcpy.un.AddNetworkAttribute(utilityNetwork, LoadAttribute, "INTEGER", False, None, False)
+arcpy.un.AddNetworkAttribute(utilityNetwork, LoadAttribute, "SHORT", False, None, False)
 
 # Assign the Network Attribute to our newly created and populated Load field
 arcpy.AddMessage("Assigning network attribute to field")

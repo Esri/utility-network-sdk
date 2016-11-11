@@ -52,7 +52,7 @@ namespace LoadReportSample
     // Constants - used with the starting points table created by the Set Trace Locations tool
 
     private const string StartingPointsTableName = "UN_Temp_Starting_Points";
-    private const string StartingPointsGuidFieldName = "FEATUREGLOBALID";
+    private const string StartingPointsGlobalIDFieldName = "FEATUREGLOBALID";
     private const string StartingPointsTerminalFieldName = "TERMINALID";
 
 		// Constants - used with the Esri Electric Distribution Data Model
@@ -63,7 +63,7 @@ namespace LoadReportSample
     private const short DeviceStatusOpened = 0;
     private const short DeviceStatusClosed = 1;
 
-    private const string PhasesAttributeName = "PHASESNORMAL";
+    private const string PhasesAttributeName = "Phases Normal";
     private const string LoadAttributeName = "Load";
 
     private const short APhase = 4;
@@ -153,11 +153,11 @@ namespace LoadReportSample
 
 				// Initialize a number of geodatabase objects
 
-				using (Geodatabase utilityNetworkGeodatabase = utilityNetworkFeatureLayer.GetFeatureClass().GetDatastore() as Geodatabase)
-				using (UtilityNetwork utilityNetwork = UtilityNetworkUtils.GetUtilityNetworkFromGeodatabase(utilityNetworkGeodatabase))
+        using (FeatureClass utilityNetworkFeatureClass = utilityNetworkFeatureLayer.GetFeatureClass())
+				using (UtilityNetwork utilityNetwork = UtilityNetworkUtils.GetUtilityNetworkFromFeatureClass(utilityNetworkFeatureClass))
 				using (UtilityNetworkTopology utilityNetworkTopology = utilityNetwork.GetNetworkTopology())
 				using (UtilityNetworkDefinition utilityNetworkDefinition = utilityNetwork.GetDefinition())
-        using (Geodatabase defaultGeodatabase = new Geodatabase(Project.Current.DefaultGeodatabasePath))
+        using (Geodatabase defaultGeodatabase = new Geodatabase(new FileGeodatabaseConnectionPath(new Uri(Project.Current.DefaultGeodatabasePath))))
         using (TraceManager traceManager = utilityNetwork.GetTraceManager())
         {
           // Get a row from the starting points table in the default project workspace.  This table is created the first time the user creates a starting point
@@ -184,10 +184,9 @@ namespace LoadReportSample
 
               // Set up our traversal filters
 
-              Filter deviceStatusFilter = new NetworkAttributeFilter(deviceStatusNetworkAttribute, FilterOperator.Equal, DeviceStatusClosed);
-              Filter aPhaseFilter = new And(deviceStatusFilter, new NetworkAttributeFilter(phasesNetworkAttribute, FilterOperator.BitwiseAnd, APhase));
-              Filter bPhaseFilter = new And(deviceStatusFilter, new NetworkAttributeFilter(phasesNetworkAttribute, FilterOperator.BitwiseAnd, BPhase));
-              Filter cPhaseFilter = new And(deviceStatusFilter, new NetworkAttributeFilter(phasesNetworkAttribute, FilterOperator.BitwiseAnd, CPhase));
+              Filter aPhaseFilter = new NetworkAttributeFilter(phasesNetworkAttribute, FilterOperator.BitwiseAnd, APhase);
+              Filter bPhaseFilter = new NetworkAttributeFilter(phasesNetworkAttribute, FilterOperator.BitwiseAnd, BPhase);
+              Filter cPhaseFilter = new NetworkAttributeFilter(phasesNetworkAttribute, FilterOperator.BitwiseAnd, CPhase);
 
               // Create function to add up loads on service points
 
@@ -196,6 +195,7 @@ namespace LoadReportSample
               // Create trace configuration object
 
               TraceConfiguration traceConfiguration = new TraceConfiguration();
+              traceConfiguration.TerminatorFilter = new NetworkAttributeFilter(deviceStatusNetworkAttribute, FilterOperator.Equal, DeviceStatusOpened);
               traceConfiguration.OutputCategories = new List<string>() { ServicePointCategory };
               traceConfiguration.Functions = new List<Function>() { sumServicePointLoadFunction };
 
@@ -272,7 +272,7 @@ namespace LoadReportSample
                   results.Success = false;
                   results.Message += e.Message;
                 }
-              }       
+              }
             }
 
             // append success message to the output string
@@ -351,7 +351,7 @@ namespace LoadReportSample
 
       // Fetch the Guid, and TerminalID values from the starting point row
 
-      object vGlobalID = startingPointRow[StartingPointsGuidFieldName];
+      object vGlobalID = startingPointRow[StartingPointsGlobalIDFieldName];
       Guid globalID = new Guid(vGlobalID.ToString());
 
       object vTerminalID = startingPointRow[StartingPointsTerminalFieldName];
