@@ -52,6 +52,9 @@ namespace LoadReportSample
     // Constants - used with the starting points table created by the Set Trace Locations tool
 
     private const string StartingPointsTableName = "UN_Temp_Starting_Points";
+    private const string StartingPointsSourceIDFieldName = "SourceID";
+    private const string StartingPointsAssetGroupFieldName = "AssetGroupCode";
+    private const string StartingPointsAssetTypeFieldName = "AssetType";
     private const string StartingPointsGlobalIDFieldName = "FEATUREGLOBALID";
     private const string StartingPointsTerminalFieldName = "TERMINALID";
 
@@ -78,36 +81,35 @@ namespace LoadReportSample
     /// 
     /// </summary>
 
-    protected override void OnClick()
+    protected override async void OnClick()
     {
 			// Start by checking to make sure we have a single feature layer selected
 
       if (MapView.Active == null)
       {
-        MessageBox.Show("Please select a feature layer that participates in a utility network.", "Create Load Report");
+        MessageBox.Show("Please select a utility network layer.", "Create Load Report");
         return;
       }
 
       MapViewEventArgs mapViewEventArgs = new MapViewEventArgs(MapView.Active);
-      if (mapViewEventArgs.MapView.GetSelectedLayers().Count != 1 || !(mapViewEventArgs.MapView.GetSelectedLayers()[0] is FeatureLayer))
+      if (mapViewEventArgs.MapView.GetSelectedLayers().Count != 1)
       {
-        MessageBox.Show("Please select a feature layer that participates in a utility network.", "Create Load Report");
+        MessageBox.Show("Please select a utility network layer.", "Create Load Report");
         return;
       }
 
-      // Currently this tool does not work if the selected layer is the UtilityNetworkLayer itself.  The SDK will eventually be extended so that we can return the utility network object from the 
-      // UtilityNetworkLayer.
-
-      if (mapViewEventArgs.MapView.GetSelectedLayers()[0] is UtilityNetworkLayer)
+      Layer selectionLayer = mapViewEventArgs.MapView.GetSelectedLayers()[0];
+      if (!(selectionLayer is UtilityNetworkLayer) && !(selectionLayer is FeatureLayer))
       {
-        MessageBox.Show("Please select a feature layer that participates in a utility network.", "Create Load Report");
+        MessageBox.Show("Please select a utility network layer.", "Create Load Report");
         return;
       }
 
       // Generate our report.  The LoadTraceResults class is used to pass back results from the worker thread to the UI thread that we're currently executing.
-
-      Task<LoadTraceResults> task = GenerateReport(mapViewEventArgs.MapView.GetSelectedLayers()[0] as FeatureLayer);
-      LoadTraceResults traceResults = task.Result;
+      LoadTraceResults traceResults = await QueuedTask.Run<LoadTraceResults>(() =>
+      {
+        return GenerateReport(selectionLayer);
+      });
 
 			// Assemble a string to show in the message box
 
@@ -139,150 +141,142 @@ namespace LoadReportSample
 		/// 
 		/// </summary>
 
-		public Task<LoadTraceResults> GenerateReport(FeatureLayer utilityNetworkFeatureLayer)
+		public LoadTraceResults GenerateReport(Layer selectedLayer)
 		{
+			// Create a new results object.  We use this class to pass back a set of data from the worker thread to the UI thread
 
-			// This is the standard way in Pro to execute a set of code on the MCT (worker) thread.  Note that many of these routines can ONLY be called on the MCT thread.
+			LoadTraceResults results = new LoadTraceResults();
 
-			return QueuedTask.Run<LoadTraceResults>(() =>
-			{
+			// Initialize a number of geodatabase objects
 
-				// Create a new results object.  We use this class to pass back a set of data from the worker thread to the UI thread
+			using (UtilityNetwork utilityNetwork = UtilityNetworkUtils.GetUtilityNetworkFromLayer(selectedLayer))
+			using (UtilityNetworkDefinition utilityNetworkDefinition = utilityNetwork.GetDefinition())
+      using (Geodatabase defaultGeodatabase = new Geodatabase(new FileGeodatabaseConnectionPath(new Uri(Project.Current.DefaultGeodatabasePath))))
+      using (TraceManager traceManager = utilityNetwork.GetTraceManager())
+      {
+        // Get a row from the starting points table in the default project workspace.  This table is created the first time the user creates a starting point
+        // If the table is missing or empty, a null row is returned
 
-				LoadTraceResults results = new LoadTraceResults();
-
-				// Initialize a number of geodatabase objects
-
-        using (FeatureClass utilityNetworkFeatureClass = utilityNetworkFeatureLayer.GetFeatureClass())
-				using (UtilityNetwork utilityNetwork = UtilityNetworkUtils.GetUtilityNetworkFromFeatureClass(utilityNetworkFeatureClass))
-				using (UtilityNetworkTopology utilityNetworkTopology = utilityNetwork.GetNetworkTopology())
-				using (UtilityNetworkDefinition utilityNetworkDefinition = utilityNetwork.GetDefinition())
-        using (Geodatabase defaultGeodatabase = new Geodatabase(new FileGeodatabaseConnectionPath(new Uri(Project.Current.DefaultGeodatabasePath))))
-        using (TraceManager traceManager = utilityNetwork.GetTraceManager())
+        using (Row startingPointRow = GetStartingPointRow(defaultGeodatabase, ref results))
         {
-          // Get a row from the starting points table in the default project workspace.  This table is created the first time the user creates a starting point
-          // If the table is missing or empty, a null row is returned
-
-          using (Row startingPointRow = GetStartingPointRow(defaultGeodatabase, ref results))
+          if (startingPointRow != null)
           {
-            if (startingPointRow != null)
+
+            // Convert starting point row into network element
+
+            FeatureElement startingPointFeatureElement = GetFeatureElementFromStartingPointRow(startingPointRow, utilityNetwork, utilityNetworkDefinition);
+
+            // Obtain a tracer object
+
+            DownstreamTracer downstreamTracer = traceManager.GetTracer<DownstreamTracer>();
+
+            // Get the network attributes that we will use in our trace
+
+            NetworkAttribute phasesNetworkAttribute = utilityNetworkDefinition.GetNetworkAttribute(PhasesAttributeName);
+            NetworkAttribute loadNetworkAttribute = utilityNetworkDefinition.GetNetworkAttribute(LoadAttributeName);
+            NetworkAttribute deviceStatusNetworkAttribute = utilityNetworkDefinition.GetNetworkAttribute(DeviceStatusAttributeName);
+
+            // Set up our traversal filters
+
+            Filter aPhaseFilter = new NetworkAttributeFilter(phasesNetworkAttribute, FilterOperator.BitwiseAnd, APhase);
+            Filter bPhaseFilter = new NetworkAttributeFilter(phasesNetworkAttribute, FilterOperator.BitwiseAnd, BPhase);
+            Filter cPhaseFilter = new NetworkAttributeFilter(phasesNetworkAttribute, FilterOperator.BitwiseAnd, CPhase);
+
+            // Create function to add up loads on service points
+
+            Function sumServicePointLoadFunction = new Sum(loadNetworkAttribute);
+
+            // Create trace configuration object
+
+            TraceConfiguration traceConfiguration = new TraceConfiguration();
+            traceConfiguration.TerminatorFilter = new NetworkAttributeFilter(deviceStatusNetworkAttribute, FilterOperator.Equal, DeviceStatusOpened);
+            traceConfiguration.OutputCategories = new List<string>() { ServicePointCategory };
+            traceConfiguration.Functions = new List<Function>() { sumServicePointLoadFunction };
+
+            // Create starting point list and trace argument object
+
+            List<FeatureElement> startingPointList = new List<FeatureElement>() { startingPointFeatureElement };
+            TraceArgument traceArgument = new TraceArgument(startingPointList);
+
+            // Execute the trace on A phase
+
+            traceConfiguration.TraversalFilter = aPhaseFilter;
+            traceArgument.Configuration = traceConfiguration;
+            try
             {
-
-              // Convert starting point row into network element
-
-              NetworkElement startingPointNetworkElement = GetNetworkElementFromStartingPointRow(startingPointRow, utilityNetworkTopology);
-
-              // Obtain a tracer object
-
-              DownstreamTracer downstreamTracer = traceManager.GetTracer<DownstreamTracer>();
-
-              // Get the network attributes that we will use in our trace
-
-              NetworkAttribute phasesNetworkAttribute = utilityNetworkDefinition.GetNetworkAttribute(PhasesAttributeName);
-              NetworkAttribute loadNetworkAttribute = utilityNetworkDefinition.GetNetworkAttribute(LoadAttributeName);
-              NetworkAttribute deviceStatusNetworkAttribute = utilityNetworkDefinition.GetNetworkAttribute(DeviceStatusAttributeName);
-
-              // Set up our traversal filters
-
-              Filter aPhaseFilter = new NetworkAttributeFilter(phasesNetworkAttribute, FilterOperator.BitwiseAnd, APhase);
-              Filter bPhaseFilter = new NetworkAttributeFilter(phasesNetworkAttribute, FilterOperator.BitwiseAnd, BPhase);
-              Filter cPhaseFilter = new NetworkAttributeFilter(phasesNetworkAttribute, FilterOperator.BitwiseAnd, CPhase);
-
-              // Create function to add up loads on service points
-
-              Function sumServicePointLoadFunction = new Sum(loadNetworkAttribute);
-
-              // Create trace configuration object
-
-              TraceConfiguration traceConfiguration = new TraceConfiguration();
-              traceConfiguration.TerminatorFilter = new NetworkAttributeFilter(deviceStatusNetworkAttribute, FilterOperator.Equal, DeviceStatusOpened);
-              traceConfiguration.OutputCategories = new List<string>() { ServicePointCategory };
-              traceConfiguration.Functions = new List<Function>() { sumServicePointLoadFunction };
-
-              // Create starting point list and trace argument object
-
-              List<NetworkElement> startingPointList = new List<NetworkElement>() { startingPointNetworkElement };
-              TraceArgument traceArgument = new TraceArgument(startingPointList);
-
-              // Execute the trace on A phase
-
-              traceConfiguration.TraversalFilter = aPhaseFilter;
-              traceArgument.Configuration = traceConfiguration;
-              try
+              TraceResult resultsA = downstreamTracer.Trace(traceArgument);
+              results.NumberServicePointsA = resultsA.TraceOutput.Count;
+              if (resultsA.FunctionOutput.Count > 0)
               {
-                TraceResult resultsA = downstreamTracer.Trace(traceArgument);
-                results.NumberServicePointsA = resultsA.TraceOutput.Count;
-                if (resultsA.FunctionOutput.Count > 0)
-                {
-                  results.TotalLoadA = (double)resultsA.FunctionOutput.First().GlobalValue;
-                }
+                results.TotalLoadA = (double)resultsA.FunctionOutput.First().GlobalValue;
               }
-              catch (ArcGIS.Core.Data.GeodatabaseUtilityNetworkException e)
+            }
+            catch (ArcGIS.Core.Data.GeodatabaseUtilityNetworkException e)
+            {
+              //No A phase connectivity to source
+              if (!e.Message.Equals("No subnetwork source was discovered.") )
               {
-                //No A phase connectivity to source
-                if (!e.Message.Equals("No subnetwork source was discovered.") )
-                {
-                  results.Success = false;
-                  results.Message += e.Message;
-                }
-              }
-
-              // Execute the trace on B phase
-
-              traceConfiguration.TraversalFilter = bPhaseFilter;
-              traceArgument.Configuration = traceConfiguration;
-
-              try
-              {
-                TraceResult resultsB = downstreamTracer.Trace(traceArgument);
-                results.NumberServicePointsB = resultsB.TraceOutput.Count;
-                if (resultsB.FunctionOutput.Count > 0)
-                {
-                  results.TotalLoadB = (double)resultsB.FunctionOutput.First().GlobalValue;
-                }
-              }
-              catch (ArcGIS.Core.Data.GeodatabaseUtilityNetworkException e)
-              {
-                // No B phase connectivity to source
-                if (!e.Message.Equals("No subnetwork source was discovered."))
-                {
-                  results.Success = false;
-                  results.Message += e.Message;
-                }
-              }
-
-              // Execute the trace on C phase
-
-              traceConfiguration.TraversalFilter = cPhaseFilter;
-              traceArgument.Configuration = traceConfiguration;
-              try
-              {
-                TraceResult resultsC = downstreamTracer.Trace(traceArgument);
-                results.NumberServicePointsC = resultsC.TraceOutput.Count;
-                if (resultsC.FunctionOutput.Count > 0)
-                {
-                  results.TotalLoadC = (double)resultsC.FunctionOutput.First().GlobalValue;
-                }
-              }
-              catch (ArcGIS.Core.Data.GeodatabaseUtilityNetworkException e)
-              {
-                // No C phase connectivity to source
-                if (!e.Message.Equals("No subnetwork source was discovered."))
-                {
-                  results.Success = false;
-                  results.Message += e.Message;
-                }
+                results.Success = false;
+                results.Message += e.Message;
               }
             }
 
-            // append success message to the output string
+            // Execute the trace on B phase
 
-            results.Message += "Trace successful.";
-            results.Success = true;
+            traceConfiguration.TraversalFilter = bPhaseFilter;
+            traceArgument.Configuration = traceConfiguration;
+
+            try
+            {
+              TraceResult resultsB = downstreamTracer.Trace(traceArgument);
+              results.NumberServicePointsB = resultsB.TraceOutput.Count;
+              if (resultsB.FunctionOutput.Count > 0)
+              {
+                results.TotalLoadB = (double)resultsB.FunctionOutput.First().GlobalValue;
+              }
+            }
+            catch (ArcGIS.Core.Data.GeodatabaseUtilityNetworkException e)
+            {
+              // No B phase connectivity to source
+              if (!e.Message.Equals("No subnetwork source was discovered."))
+              {
+                results.Success = false;
+                results.Message += e.Message;
+              }
+            }
+
+            // Execute the trace on C phase
+
+            traceConfiguration.TraversalFilter = cPhaseFilter;
+            traceArgument.Configuration = traceConfiguration;
+            try
+            {
+              TraceResult resultsC = downstreamTracer.Trace(traceArgument);
+              results.NumberServicePointsC = resultsC.TraceOutput.Count;
+              if (resultsC.FunctionOutput.Count > 0)
+              {
+                results.TotalLoadC = (double)resultsC.FunctionOutput.First().GlobalValue;
+              }
+            }
+            catch (ArcGIS.Core.Data.GeodatabaseUtilityNetworkException e)
+            {
+              // No C phase connectivity to source
+              if (!e.Message.Equals("No subnetwork source was discovered."))
+              {
+                results.Success = false;
+                results.Message += e.Message;
+              }
+            }
           }
+
+          // append success message to the output string
+
+          results.Message += "Trace successful.";
+          results.Success = true;
         }
-				return results;
-			});
+      }
+			return results;
+
 		}
 
 
@@ -346,10 +340,19 @@ namespace LoadReportSample
 		/// </summary>
 		/// 
 
-    private NetworkElement GetNetworkElementFromStartingPointRow(Row startingPointRow, UtilityNetworkTopology utilityNetworkTopology)
+    private FeatureElement GetFeatureElementFromStartingPointRow(Row startingPointRow, UtilityNetwork utilityNetwork, UtilityNetworkDefinition definition)
     {
 
-      // Fetch the Guid, and TerminalID values from the starting point row
+      // Fetch the SourceID, AssetGroupCode, AssetType, GlobalID, and TerminalID values from the starting point row
+
+      object vSourceID = startingPointRow[StartingPointsSourceIDFieldName];
+      int sourceID = (int)vSourceID;
+
+      object vAssetGroupID = startingPointRow[StartingPointsAssetGroupFieldName];
+      int assetGroupID = (int)vAssetGroupID;
+
+      object vAssetTypeID = startingPointRow[StartingPointsAssetTypeFieldName];
+      int assetTypeID = (int)vAssetTypeID;
 
       object vGlobalID = startingPointRow[StartingPointsGlobalIDFieldName];
       Guid globalID = new Guid(vGlobalID.ToString());
@@ -357,9 +360,16 @@ namespace LoadReportSample
       object vTerminalID = startingPointRow[StartingPointsTerminalFieldName];
       int terminalID = (int)vTerminalID;
 
-      // Given a GlobalID and TerminalID, we can get a NetworkElement from the index
+      // Fetch the NetworkSource, AssetGroup, and AssetType objects
 
-      return UtilityNetworkUtils.GetNetworkElementFromGuidAndTerminalID(utilityNetworkTopology, globalID, terminalID);
+      FeatureSource featureSource = definition.GetNetworkSources().First(x => x.ID == sourceID) as FeatureSource;
+      AssetGroup assetGroup = featureSource.GetAssetGroups().First(x => x.Code == assetGroupID);
+      AssetType assetType = assetGroup.GetAssetTypes().First(x => x.Code == assetTypeID);
+
+      // Create and return a FeatureElement object
+
+      return utilityNetwork.CreateFeatureElement(assetType, globalID, terminalID);
+
     }
   }
 }

@@ -18,6 +18,8 @@ using System.Text;
 using System.Threading.Tasks;
 using ArcGIS.Core.Data;
 using ArcGIS.Core.Internal.Data.UtilityNetwork;
+using ArcGIS.Desktop.Internal.Mapping;
+using ArcGIS.Desktop.Mapping;
 
 namespace UtilityNetworkSamples
 {
@@ -33,67 +35,51 @@ namespace UtilityNetworkSamples
     /// <param name="featureClass"></param>
     /// <returns>a UtilityNetwork object, or null if the feature class does not belong to a utility network</returns>
    
-    public static UtilityNetwork GetUtilityNetworkFromFeatureClass(FeatureClass featureClass)
+    public static UtilityNetwork GetUtilityNetworkFromLayer(Layer layer)
     {
-      if (featureClass.IsControllerDatasetSupported())
+
+      if (layer is UtilityNetworkLayer)
       {
-        IReadOnlyList<Dataset> controllerDatasets = featureClass.GetControllerDatasets();
-        foreach (Dataset controllerDataset in controllerDatasets)
+        UtilityNetworkLayer utilityNetworkLayer = layer as UtilityNetworkLayer;
+        return utilityNetworkLayer.GetUtilityNetwork();
+      }
+
+      else if (layer is FeatureLayer)
+      {
+        FeatureLayer featureLayer = layer as FeatureLayer;
+        using (FeatureClass featureClass = featureLayer.GetFeatureClass())
         {
-          if (controllerDataset is UtilityNetwork)
+
+          // FeatureClass.IsControllerDatasetSupported() is the preferred technique for getting a UtilityNetwork from a 
+          // FeatureClass.  Unfortunately, this routine is not yet implemented for Feature Service Workspaces, so we need to use this workaround
+          // (which will not work in the event that multiple utility networks exist in the same workspace)
+
+          Geodatabase geodatabase = featureClass.GetDatastore() as Geodatabase;
+
+          if (geodatabase.GetGeodatabaseType() == GeodatabaseType.Service)
           {
-            return controllerDataset as UtilityNetwork;
+            IReadOnlyList<UtilityNetworkDefinition> listUtilityNetworkDefinitions = geodatabase.GetDefinitions<UtilityNetworkDefinition>();
+            if (listUtilityNetworkDefinitions.Count == 1)
+            {
+              UtilityNetworkDefinition utilityNetworkDefinition = listUtilityNetworkDefinitions[0];
+              UtilityNetwork utilityNetwork = geodatabase.OpenDataset<UtilityNetwork>(utilityNetworkDefinition.GetName());
+              return utilityNetwork;
+            }
+          }
+          else if (featureClass.IsControllerDatasetSupported())
+          {
+            IReadOnlyList<Dataset> controllerDatasets = featureClass.GetControllerDatasets();
+            foreach (Dataset controllerDataset in controllerDatasets)
+            {
+              if (controllerDataset is UtilityNetwork)
+              {
+                return controllerDataset as UtilityNetwork;
+              }
+            }
           }
         }
       }
       return null;
     }
-
-
-    // GetNetworkElementFromGuidAndTerminalID
-    // This routine isn't as simple as it might first appear because network elements are returned from the network index by passing 
-    // in a Guid.  If the Guid refers to a feature with terminals, a set of network elements will be returned, only one of which 
-    // will map to the TerminalID that is included with the FeatureElement.
-    // Note that when this routine is called on an edge with multiple elements, the first edge will be returned (Feature elements
-    // do not provide a way to identify a particular edge)
-
-    public static NetworkElement GetNetworkElementFromGuidAndTerminalID(UtilityNetworkTopology utilityNetworkTopology, Guid globalID, int terminalID)
-    {
-      // Get a list of the network elements that correspond to this guid
-      IReadOnlyList<NetworkElement> networkElements = utilityNetworkTopology.GetNetworkElements(globalID);
-
-      // For each network element, convert to a feature element
-      foreach (NetworkElement networkElement in networkElements)
-      {
-        FeatureElement foundFeatureElement = utilityNetworkTopology.GetFeatureElement(networkElement);
-        if (foundFeatureElement.Terminal == null)
-        {
-          // We have an edge.  If we asked for an edge, we've found our network element
-          if (terminalID == -1)
-          {
-            return networkElement;
-          }
-        }
-        else if (foundFeatureElement.Terminal.ID == terminalID)
-        {
-          return networkElement;
-        }
-      }
-      return null;
-    }
-
-		// GetNetworkAttributeByName - returns a NetworkAttribute with the given name
-		// This routine might be added to future versions of the SDK
-		public static NetworkAttribute GetNetworkAttributeByName(UtilityNetworkDefinition utilityNetworkDefinition, string name)
-		{
-			return utilityNetworkDefinition.GetNetworkAttributes().First(x => x.Name == name);
-		}
-
-		// GetSubtypeByName - returns a subtype with the given name
-		// This routine might be added to future versions of the SDK
-		public static Subtype GetSubtypeByName(FeatureClassDefinition featureClassDefinition, string name)
-		{
-			return featureClassDefinition.GetSubtypes().First(x => x.GetName() == name);
-		}
   }
 }
