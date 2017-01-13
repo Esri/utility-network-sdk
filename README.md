@@ -48,7 +48,7 @@ The requirements and supported software needed to develop utility network add-in
 * Visual Studio 2013 (Professional, Premium, Ultimate, and Community Editions)
 
 ##Resources
-* [ArcGIS Pro 1.4 Utility Network Alpha 13](https://earlyadopter.esri.com/project/version/item.html?cap=2578B1991F9E43C7B114BD1BB37462C9&arttypeid={13C846C4-9434-4B46-A34C-97D3F4DBCDF3}&artid={4AA7D953-7D17-465A-83FE-15C75185EF33}) 
+* [ArcGIS Pro 1.4 Utility Network Alpha 13](https://earlyadopter.esri.com/project/version/item.html?cap=2578B1991F9E43C7B114BD1BB37462C9&arttypeid={13C846C4-9434-4B46-A34C-97D3F4DBCDF3}&artid={5594F0C8-9A83-4086-9AB3-70C595469989}) 
 * [Installing ArcGIS Pro SDK](https://github.com/Esri/arcgis-pro-sdk#installing-arcgis-pro-sdk-for-net)
 * [Building add-ins for ArcGIS Pro](https://github.com/Esri/arcgis-pro-sdk/wiki/ProGuide-Build-your-first-add-in)
 * [ArcGIS Pro 1.4 API Reference Guide](http://pro.arcgis.com/en/pro-app/sdk/api-reference/#topic1.html)
