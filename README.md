@@ -1,4 +1,4 @@
-## ArcGIS Pro 1.4 Utility Network Alpha SDK
+## ArcGIS Pro 1.4 Utility Network Beta SDK
 
 The utility network in ArcGIS provides organizations that manage networks – like electric, telecom, gas, sewer, and water lines – an extensible solution that focuses on performance, scalability, interoperability, and data integrity. 
 
@@ -25,7 +25,7 @@ This repository contains ArcGIS Pro Add-in Samples for the ArcGIS Pro 1.4 SDK fo
 ##Documentation
 This repository contains two important documents.
 
-- [Utility Network SDK Alpha 13.pptx](https://github.com/ArcGIS/utility-network-sdk-dev/blob/master/Utility%20Network%20SDK%20Alpha%2013.pptx).  This PowerPoint describes the major classes inside the Utility Network SDK.  While the SDK is still evolving, this document is up-to-date with the SDK.
+- [Utility Network SDK Beta 1](https://github.com/ArcGIS/utility-network-sdk-dev/blob/master/Utility%20Network%20SDK%20Beta%201.pdf).  This document describes the major classes inside the Utility Network SDK.  While the SDK is still evolving, this document is up-to-date with the SDK. *New introductory material was added in Beta 1.  The doc will continue to evolve through future beta releases.*
 - [Utility Network SDK.chm](https://github.com/ArcGIS/utility-network-sdk-dev/blob/master/Utility%20Network%20SDK.chm).  This contains an API reference for this alpha release.  Utility Network classes are contained within the ArcGIS.Core.Internal.Data.UtilityNetwork namespace (post-ship, they will move to ArcGIS.Core.Data.UtilityNetwork).  This API reference is not yet complete, and will evolve over time.  For classes outside of the utility network, we recommend you continue to use the [official documentation](http://pro.arcgis.com/en/pro-app/sdk/api-reference/#topic1.html).
 
 ##Requirements
@@ -48,7 +48,7 @@ The requirements and supported software needed to develop utility network add-in
 * Visual Studio 2013 (Professional, Premium, Ultimate, and Community Editions)
 
 ##Resources
-* [ArcGIS Pro 1.4 Utility Network Alpha 13](https://earlyadopter.esri.com/project/version/item.html?cap=2578B1991F9E43C7B114BD1BB37462C9&arttypeid={13C846C4-9434-4B46-A34C-97D3F4DBCDF3}&artid={5594F0C8-9A83-4086-9AB3-70C595469989}) 
+* [Utility Network Early Adopter site](https://earlyadopter.esri.com/project/home.html?cap=2578B1991F9E43C7B114BD1BB37462C9)
 * [Installing ArcGIS Pro SDK](https://github.com/Esri/arcgis-pro-sdk#installing-arcgis-pro-sdk-for-net)
 * [Building add-ins for ArcGIS Pro](https://github.com/Esri/arcgis-pro-sdk/wiki/ProGuide-Build-your-first-add-in)
 * [ArcGIS Pro 1.4 API Reference Guide](http://pro.arcgis.com/en/pro-app/sdk/api-reference/#topic1.html)
