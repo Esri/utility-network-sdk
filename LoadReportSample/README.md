@@ -1,4 +1,4 @@
-##LoadReportSample
+## LoadReportSample
 
 This addin demonstrates the creation of a simple electric distribution report.  It traces downstream from a given point and adds up the count of customers and total load per phase.  This sample is meant to be a demonstration on how to use the Utility Network portions of the SDK.  The report display is rudimentary.  Look elsewhere in the SDK for better examples on how to display data.
 
@@ -15,10 +15,10 @@ Contributor:   ArcGIS Pro SDK Team <arcgisprosdk@esri.com>
 Organization:  Esri, http://www.esri.com
 Date:          10/10/2016
 ArcGIS Pro:    1.4
-Visual Studio: 2013, 2015
+Visual Studio: 2015
 ```
 
-##Resources
+## Resources
 
 * [API Reference online](http://pro.arcgis.com/en/pro-app/sdk/api-reference)
 * <a href="http://pro.arcgis.com/en/pro-app/sdk/" target="_blank">ArcGIS Pro SDK for .NET (pro.arcgis.com)</a>
@@ -31,10 +31,10 @@ Visual Studio: 2013, 2015
 
 ![ArcGIS Pro SDK for .NET Icons](http://esri.github.io/arcgis-pro-sdk/images/Home/Image-of-icons.png "ArcGIS Pro SDK Icons")
 
-##Preparing Data
-This sample requires a database configured in a special way.  Start with the Naperville sample data provided with the utility network early adopter program.  Then run the ConfigureLoadReportData.py script included in this repository.  This will add the necessary fields, network attributes, and categories required to run the sample.
+## Preparing Data
+This sample requires a database configured in a special way.  Start with the Naperville sample data provided with the utility network beta.  Then run the ConfigureLoadReportData.py script included in this repository.  This will add the category required to run the sample.
 
-##How to use the sample
+## How to use the sample
 <!-- TODO: Explain how this sample can be used. To use images in this section, create the image file in your sample project's screenshots folder. Use relative url to link to this image using this syntax: ![My sample Image](FacePage/SampleImage.png) -->
 1. In Visual Studio click the Build menu.  Then select Build Solution.
 2. Click Start button to open ArcGIS Pro.
@@ -51,6 +51,6 @@ This sample requires a database configured in a special way.  Start with the Nap
 [](Esri Language: C-Sharp)​
 
 <p align = center><img src="http://esri.github.io/arcgis-pro-sdk/images/ArcGISPro.png"  alt="pre-req" align = "top" height = "20" width = "20" >
-<b> ArcGIS Pro 1.3 SDK for Microsoft .NET Framework</b>
+<b> ArcGIS Pro 1.4 SDK for Microsoft .NET Framework</b>
 </p>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Home](https://github.com/Esri/arcgis-pro-sdk/wiki) | <a href="http://pro.arcgis.com/en/pro-app/sdk" target="_blank">ArcGIS Pro SDK</a> | <a href="http://pro.arcgis.com/en/pro-app/sdk/api-reference/index.html" target="_blank">API Reference</a> | [Requirements](#requirements) | [Download](#installing-arcgis-pro-sdk-for-net) |  <a href="http://github.com/esri/arcgis-pro-sdk-community-samples" target="_blank">Samples</a>

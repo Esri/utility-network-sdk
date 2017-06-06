@@ -63,11 +63,11 @@ namespace LoadReportSample
     private const string ServicePointCategory = "ServicePoint";
     private const string DeviceStatusAttributeName = "Device Status";
 
-    private const short DeviceStatusOpened = 0;
-    private const short DeviceStatusClosed = 1;
+    private const short DeviceStatusOpened = 1;
+    private const short DeviceStatusClosed = 2;
 
-    private const string PhasesAttributeName = "Phases Normal";
-    private const string LoadAttributeName = "Load";
+    private const string PhasesAttributeName = "Phases Current";
+    private const string LoadAttributeName = "Customer Load";
 
     private const short APhase = 4;
     private const short BPhase = 2;
@@ -147,13 +147,22 @@ namespace LoadReportSample
 
 			LoadTraceResults results = new LoadTraceResults();
 
-			// Initialize a number of geodatabase objects
+      // Initialize a number of geodatabase objects
 
-			using (UtilityNetwork utilityNetwork = UtilityNetworkUtils.GetUtilityNetworkFromLayer(selectedLayer))
-			using (UtilityNetworkDefinition utilityNetworkDefinition = utilityNetwork.GetDefinition())
+      using (UtilityNetwork utilityNetwork = UtilityNetworkUtils.GetUtilityNetworkFromLayer(selectedLayer))
+      using (Geodatabase utilityNetworkGeodatabase = utilityNetwork.GetDatastore() as Geodatabase)
+      using (UtilityNetworkDefinition utilityNetworkDefinition = utilityNetwork.GetDefinition())
       using (Geodatabase defaultGeodatabase = new Geodatabase(new FileGeodatabaseConnectionPath(new Uri(Project.Current.DefaultGeodatabasePath))))
       using (TraceManager traceManager = utilityNetwork.GetTraceManager())
       {
+        // First check to make sure we have a feature service workspace.  Utility Network functionality requires this.
+        if (utilityNetworkGeodatabase.GetGeodatabaseType() != GeodatabaseType.Service)
+        {
+          results.Message = "A feature service workspace connection is required.";
+          results.Success = false;
+          return results;
+        }
+
         // Get a row from the starting points table in the default project workspace.  This table is created the first time the user creates a starting point
         // If the table is missing or empty, a null row is returned
 
@@ -172,9 +181,24 @@ namespace LoadReportSample
 
             // Get the network attributes that we will use in our trace
 
-            NetworkAttribute phasesNetworkAttribute = utilityNetworkDefinition.GetNetworkAttribute(PhasesAttributeName);
-            NetworkAttribute loadNetworkAttribute = utilityNetworkDefinition.GetNetworkAttribute(LoadAttributeName);
-            NetworkAttribute deviceStatusNetworkAttribute = utilityNetworkDefinition.GetNetworkAttribute(DeviceStatusAttributeName);
+            NetworkAttribute phasesNetworkAttribute = null;
+            NetworkAttribute loadNetworkAttribute = null;
+            NetworkAttribute deviceStatusNetworkAttribute = null;
+
+            try
+            {
+              phasesNetworkAttribute = utilityNetworkDefinition.GetNetworkAttribute(PhasesAttributeName);
+              loadNetworkAttribute = utilityNetworkDefinition.GetNetworkAttribute(LoadAttributeName);
+              deviceStatusNetworkAttribute = utilityNetworkDefinition.GetNetworkAttribute(DeviceStatusAttributeName);
+            }
+            catch
+            {
+              results.Success = false;
+              results.Message = "This add-in requires the following network attributes: Phases Current, Load, DeviceStatus.\n";
+              return results;
+            }
+
+
 
             // Set up our traversal filters
 
@@ -192,6 +216,7 @@ namespace LoadReportSample
             traceConfiguration.TerminatorFilter = new NetworkAttributeFilter(deviceStatusNetworkAttribute, FilterOperator.Equal, DeviceStatusOpened);
             traceConfiguration.OutputCategories = new List<string>() { ServicePointCategory };
             traceConfiguration.Functions = new List<Function>() { sumServicePointLoadFunction };
+
 
             // Create starting point list and trace argument object
 
@@ -214,7 +239,7 @@ namespace LoadReportSample
             catch (ArcGIS.Core.Data.GeodatabaseUtilityNetworkException e)
             {
               //No A phase connectivity to source
-              if (!e.Message.Equals("No subnetwork source was discovered.") )
+              if (!e.Message.Equals("No subnetwork source was discovered."))
               {
                 results.Success = false;
                 results.Message += e.Message;

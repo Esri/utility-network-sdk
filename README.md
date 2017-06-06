@@ -25,8 +25,12 @@ This repository contains ArcGIS Pro Add-in Samples for the ArcGIS Pro 1.4 SDK fo
 ## Documentation
 This repository contains two important documents.
 
-- [Utility Network SDK Beta 1](https://github.com/esri/utility-network-sdk/blob/master/Utility%20Network%20SDK%20Beta%201.pdf).  This document describes the major classes inside the Utility Network SDK.  While the SDK is still evolving, this document is up-to-date with the SDK. *New introductory material was added in Beta 1.  The doc will continue to evolve through future beta releases.*
-- [Utility Network SDK.chm](https://github.com/esri/utility-network-sdk/blob/master/Utility%20Network%20SDK.chm).  This contains an API reference for this alpha release.  Utility Network classes are contained within the ArcGIS.Core.Internal.Data.UtilityNetwork namespace (post-ship, they will move to ArcGIS.Core.Data.UtilityNetwork).  This API reference is not yet complete, and will evolve over time.  For classes outside of the utility network, we recommend you continue to use the [official documentation](http://pro.arcgis.com/en/pro-app/sdk/api-reference/#topic1.html).
+- [Utility Network SDK Beta 1](https://github.com/esri/utility-network-sdk/blob/master/Utility%20Network%20SDK%20Beta%201.pdf).  This document describes the major classes inside the Utility Network SDK.  While the SDK is still evolving, this document is up-to-date with the SDK. 
+- [Utility Network SDK.chm](https://github.com/esri/utility-network-sdk/blob/master/Utility%20Network%20SDK.chm).  This contains an API reference for this beta release.  Utility Network classes are contained within the ArcGIS.Core.Internal.Data.UtilityNetwork namespace (post-ship, they will move to ArcGIS.Core.Data.UtilityNetwork).  This API reference is not yet complete, and will evolve over time.  For classes outside of the utility network, we recommend you continue to use the [official documentation](http://pro.arcgis.com/en/pro-app/sdk/api-reference/#topic1.html).
+
+In addition, the [wiki page](https://github.com/esri/utility-network-sdk/wiki) contains two additional documents:
+- [ProConcepts: Utility Network](https://github.com/esri/utility-network-sdk/wiki/ProConcepts-Utility-Network).  This is the draft version of the conceptual documentation that will ship with the first release.
+- [SDK Changes](https://github.com/esri/utility-network-sdk/wiki/SDK%20Changes).  For those partners who were part of our alpha program, this document describes what classes and methods changed with each pre-release.
 
 ## Requirements
 The requirements and supported software needed to develop utility network add-ins.
@@ -45,7 +49,6 @@ The requirements and supported software needed to develop utility network add-in
 
 #### Supported IDEs
 * Visual Studio 2015 (Professional, Enterprise, and Community Editions)
-* Visual Studio 2013 (Professional, Premium, Ultimate, and Community Editions)
 
 ## Resources
 * [Utility Network Early Adopter site](https://earlyadopter.esri.com/project/home.html?cap=2578B1991F9E43C7B114BD1BB37462C9)
@@ -55,10 +58,6 @@ The requirements and supported software needed to develop utility network add-in
 
 
 ## Known Issues
-* While all of the SDK is subject to change, the following areas will be significantly changed in future releases:
-	- Terminals
-	- Tier
-	- Subnetwork management
 
 ## Contributing
 
@@ -84,6 +83,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 A copy of the license is available in the repository's [license.txt](./License.txt) file.
+
+
 
 
 

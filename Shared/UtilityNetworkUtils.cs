@@ -49,24 +49,7 @@ namespace UtilityNetworkSamples
         FeatureLayer featureLayer = layer as FeatureLayer;
         using (FeatureClass featureClass = featureLayer.GetFeatureClass())
         {
-
-          // FeatureClass.IsControllerDatasetSupported() is the preferred technique for getting a UtilityNetwork from a 
-          // FeatureClass.  Unfortunately, this routine is not yet implemented for Feature Service Workspaces, so we need to use this workaround
-          // (which will not work in the event that multiple utility networks exist in the same workspace)
-
-          Geodatabase geodatabase = featureClass.GetDatastore() as Geodatabase;
-
-          if (geodatabase.GetGeodatabaseType() == GeodatabaseType.Service)
-          {
-            IReadOnlyList<UtilityNetworkDefinition> listUtilityNetworkDefinitions = geodatabase.GetDefinitions<UtilityNetworkDefinition>();
-            if (listUtilityNetworkDefinitions.Count == 1)
-            {
-              UtilityNetworkDefinition utilityNetworkDefinition = listUtilityNetworkDefinitions[0];
-              UtilityNetwork utilityNetwork = geodatabase.OpenDataset<UtilityNetwork>(utilityNetworkDefinition.GetName());
-              return utilityNetwork;
-            }
-          }
-          else if (featureClass.IsControllerDatasetSupported())
+          if (featureClass.IsControllerDatasetSupported())
           {
             IReadOnlyList<Dataset> controllerDatasets = featureClass.GetControllerDatasets();
             foreach (Dataset controllerDataset in controllerDatasets)
