@@ -34,10 +34,10 @@ namespace LoadReportSample
   /// <summary>
   /// This addin demonstrates the creation of a simple electric distribution report.  It traces downstream from a given point and adds up the count of customers and total load per phase.  This sample
   /// is meant to be a demonstration on how to use the Utility Network portions of the SDK.  The report display is rudimentary.  Look elsewhere in the SDK for better examples on how to display data.
-	/// 
-	/// Rather than coding special logic to pick a starting point, this sample leverages the existing Set Trace Locations tool that is included with the product.
-	/// That tool writes rows to a table called UN_Temp_Starting_Points, which is stored in the default project workspace.  This sample reads rows from that table and uses them as starting points
-	/// for our downstream trace.
+  /// 
+  /// Rather than coding special logic to pick a starting point, this sample leverages the existing Set Trace Locations tool that is included with the product.
+  /// That tool writes rows to a table called UN_Temp_Starting_Points, which is stored in the default project workspace.  This sample reads rows from that table and uses them as starting points
+  /// for our downstream trace.
   /// </summary>
   /// <remarks>
   /// Instructions for use
@@ -58,8 +58,10 @@ namespace LoadReportSample
     private const string StartingPointsGlobalIDFieldName = "FEATUREGLOBALID";
     private const string StartingPointsTerminalFieldName = "TERMINALID";
 
-		// Constants - used with the Esri Electric Distribution Data Model
+    // Constants - used with the Esri Electric Distribution Data Model
 
+    private const string ElectricDomainNetwork = "ElectricDistribution";
+    private const string MediumVoltageTier = "Medium Voltage Radial";
     private const string ServicePointCategory = "ServicePoint";
     private const string DeviceStatusAttributeName = "Device Status";
 
@@ -83,7 +85,7 @@ namespace LoadReportSample
 
     protected override async void OnClick()
     {
-			// Start by checking to make sure we have a single feature layer selected
+      // Start by checking to make sure we have a single feature layer selected
 
       if (MapView.Active == null)
       {
@@ -111,7 +113,7 @@ namespace LoadReportSample
         return GenerateReport(selectionLayer);
       });
 
-			// Assemble a string to show in the message box
+      // Assemble a string to show in the message box
 
       string traceResultsString;
       if (traceResults.Success)
@@ -126,26 +128,26 @@ namespace LoadReportSample
         traceResultsString = traceResults.Message;
       }
 
-			// Show our results
+      // Show our results
 
       MessageBox.Show(traceResultsString, "Create Load Report");
     }
 
 
-		/// <summary>
-		/// GenerateReport
-		/// 
-		/// This routine takes a feature layer that references a feature class that participates in a utility network.
-		/// It returns a set of data to display on the UI thread.
-		/// 
-		/// 
-		/// </summary>
+    /// <summary>
+    /// GenerateReport
+    /// 
+    /// This routine takes a feature layer that references a feature class that participates in a utility network.
+    /// It returns a set of data to display on the UI thread.
+    /// 
+    /// 
+    /// </summary>
 
-		public LoadTraceResults GenerateReport(Layer selectedLayer)
-		{
-			// Create a new results object.  We use this class to pass back a set of data from the worker thread to the UI thread
+    public LoadTraceResults GenerateReport(Layer selectedLayer)
+    {
+      // Create a new results object.  We use this class to pass back a set of data from the worker thread to the UI thread
 
-			LoadTraceResults results = new LoadTraceResults();
+      LoadTraceResults results = new LoadTraceResults();
 
       // Initialize a number of geodatabase objects
 
@@ -199,34 +201,52 @@ namespace LoadReportSample
             }
 
 
+            // Get the Tier for Medium Voltage Radial
+            DomainNetwork electricDomainNetwork = utilityNetworkDefinition.GetDomainNetwork(ElectricDomainNetwork);
+            Tier mediumVoltageTier = electricDomainNetwork.GetTier(MediumVoltageTier);
 
-            // Set up our traversal filters
 
-            Filter aPhaseFilter = new NetworkAttributeFilter(phasesNetworkAttribute, FilterOperator.BitwiseAnd, APhase);
-            Filter bPhaseFilter = new NetworkAttributeFilter(phasesNetworkAttribute, FilterOperator.BitwiseAnd, BPhase);
-            Filter cPhaseFilter = new NetworkAttributeFilter(phasesNetworkAttribute, FilterOperator.BitwiseAnd, CPhase);
-
-            // Create function to add up loads on service points
-
-            Function sumServicePointLoadFunction = new Sum(loadNetworkAttribute);
-
-            // Create trace configuration object
-
+            // Set up the trace configuration
             TraceConfiguration traceConfiguration = new TraceConfiguration();
-            traceConfiguration.TerminatorFilter = new NetworkAttributeFilter(deviceStatusNetworkAttribute, FilterOperator.Equal, DeviceStatusOpened);
-            traceConfiguration.OutputCategories = new List<string>() { ServicePointCategory };
-            traceConfiguration.Functions = new List<Function>() { sumServicePointLoadFunction };
+            
+            // Start by taking the default TraceConfiguration from the Tier for Traversability and Propagation
+            traceConfiguration.SourceTier = mediumVoltageTier;
 
+            Traversability tierTraceTraversability = mediumVoltageTier.TraceConfiguration.Traversability;
+            traceConfiguration.Traversability.CategoryBarriers = tierTraceTraversability.CategoryBarriers;
+            traceConfiguration.Traversability.Condition = tierTraceTraversability.Condition;
+            traceConfiguration.Traversability.FunctionBarriers = tierTraceTraversability.FunctionBarriers;
+            traceConfiguration.Traversability.IncludeBarriersWithResults = tierTraceTraversability.IncludeBarriersWithResults;
+            traceConfiguration.Traversability.TraversabilityScope = tierTraceTraversability.TraversabilityScope;
+            ConditionalExpression baseCondition = tierTraceTraversability.Condition as ConditionalExpression;
+
+            traceConfiguration.Propagators = mediumVoltageTier.TraceConfiguration.Propagators;
+
+            // Create function to sum loads on service points where phase = A
+            ConditionalExpression aPhaseCondition = new NetworkAttributeComparison(phasesNetworkAttribute, Operator.DoesNotIncludeTheValues, APhase);
+            Function aPhaseLoad = new Add(loadNetworkAttribute);
+
+            // Create function to sum loads on service points where phase = B
+            ConditionalExpression bPhaseCondition = new NetworkAttributeComparison(phasesNetworkAttribute, Operator.DoesNotIncludeTheValues, BPhase);
+            Function bPhaseLoad = new Add(loadNetworkAttribute);
+
+            // Create function to sum loads on service points where phase = C
+            ConditionalExpression cPhaseCondition = new NetworkAttributeComparison(phasesNetworkAttribute, Operator.DoesNotIncludeTheValues, CPhase);
+            Function cPhaseLoad = new Add(loadNetworkAttribute);
+
+            // Set the output categories to only return service points
+            traceConfiguration.OutputCategories = new List<string>() { ServicePointCategory };
 
             // Create starting point list and trace argument object
-
             List<FeatureElement> startingPointList = new List<FeatureElement>() { startingPointFeatureElement };
             TraceArgument traceArgument = new TraceArgument(startingPointList);
-
-            // Execute the trace on A phase
-
-            traceConfiguration.TraversalFilter = aPhaseFilter;
             traceArgument.Configuration = traceConfiguration;
+
+            // Trace on the A phase
+            traceConfiguration.Traversability.Condition = new Or(baseCondition, aPhaseCondition);
+            traceConfiguration.Functions = new List<Function>() { aPhaseLoad };
+            traceArgument.Configuration = traceConfiguration;
+
             try
             {
               TraceResult resultsA = downstreamTracer.Trace(traceArgument);
@@ -246,9 +266,9 @@ namespace LoadReportSample
               }
             }
 
-            // Execute the trace on B phase
-
-            traceConfiguration.TraversalFilter = bPhaseFilter;
+            // Trace on the B phase
+            traceConfiguration.Traversability.Condition = new Or(baseCondition, bPhaseCondition);
+            traceConfiguration.Functions = new List<Function>() { bPhaseLoad };
             traceArgument.Configuration = traceConfiguration;
 
             try
@@ -270,10 +290,11 @@ namespace LoadReportSample
               }
             }
 
-            // Execute the trace on C phase
-
-            traceConfiguration.TraversalFilter = cPhaseFilter;
+            // Trace on the C phase
+            traceConfiguration.Traversability.Condition = new Or(baseCondition, cPhaseCondition);
+            traceConfiguration.Functions = new List<Function>() { cPhaseLoad };
             traceArgument.Configuration = traceConfiguration;
+
             try
             {
               TraceResult resultsC = downstreamTracer.Trace(traceArgument);
@@ -300,70 +321,70 @@ namespace LoadReportSample
           results.Success = true;
         }
       }
-			return results;
+      return results;
 
-		}
+    }
 
 
-		/// <summary>
-		/// GetStartingPointRow
-		/// 
-		/// This routine opens up the starting points table and tries to read a row.  This table is created in 
-		/// the default project workspace when the user first creates a starting point.
-		/// 
-		/// If the table doesn't exist or is empty, we add an error to our results object a null row.
-		/// If the table contains one row, we just return the row
-		/// If the table contains more than one row, we return the first row, and log a warning message
-		///		(this tool only works with one starting point)
-		/// 
-		/// </summary>
+    /// <summary>
+    /// GetStartingPointRow
+    /// 
+    /// This routine opens up the starting points table and tries to read a row.  This table is created in 
+    /// the default project workspace when the user first creates a starting point.
+    /// 
+    /// If the table doesn't exist or is empty, we add an error to our results object a null row.
+    /// If the table contains one row, we just return the row
+    /// If the table contains more than one row, we return the first row, and log a warning message
+    ///		(this tool only works with one starting point)
+    /// 
+    /// </summary>
 
-		private Row GetStartingPointRow(Geodatabase defaultGeodatabase, ref LoadTraceResults results)
-		{
-			try
-			{
-				using (FeatureClass startingPointsFeatureClass = defaultGeodatabase.OpenDataset<FeatureClass>(StartingPointsTableName))
-				using (RowCursor startingPointsCursor = startingPointsFeatureClass.Search())
-				{
-					if (startingPointsCursor.MoveNext())
-					{
+    private Row GetStartingPointRow(Geodatabase defaultGeodatabase, ref LoadTraceResults results)
+    {
+      try
+      {
+        using (FeatureClass startingPointsFeatureClass = defaultGeodatabase.OpenDataset<FeatureClass>(StartingPointsTableName))
+        using (RowCursor startingPointsCursor = startingPointsFeatureClass.Search())
+        {
+          if (startingPointsCursor.MoveNext())
+          {
             Row row = startingPointsCursor.Current;
-						
-						if (startingPointsCursor.MoveNext())
-						{
-							// If starting points table has more than one row, append warning message
-							results.Message += "Multiple starting points found.  Only the first one was used.";
-							startingPointsCursor.Current.Dispose();
-						}
-						return row;
-						
-					}
-					else
-					{
-						// If starting points table has no rows, exit with error message
-						results.Message += "No starting points found.  Please create one using the Set Trace Locations tool.\n";
-						results.Success = false;
-						return null;
-					}
-				}
-			}
-			// If we cannot open the feature class, an exception is thrown
-			catch (Exception)
-			{
-				results.Message += "No starting points found.  Please create one using the Set Trace Locations tool.\n";
-				results.Success = false;
-				return null;
-			}
-		}
+            
+            if (startingPointsCursor.MoveNext())
+            {
+              // If starting points table has more than one row, append warning message
+              results.Message += "Multiple starting points found.  Only the first one was used.";
+              startingPointsCursor.Current.Dispose();
+            }
+            return row;
+            
+          }
+          else
+          {
+            // If starting points table has no rows, exit with error message
+            results.Message += "No starting points found.  Please create one using the Set Trace Locations tool.\n";
+            results.Success = false;
+            return null;
+          }
+        }
+      }
+      // If we cannot open the feature class, an exception is thrown
+      catch (Exception)
+      {
+        results.Message += "No starting points found.  Please create one using the Set Trace Locations tool.\n";
+        results.Success = false;
+        return null;
+      }
+    }
 
 
-		/// <summary>
-		/// GetNetworkElementFromStartingPoint
-		/// 
-		/// This routine takes a row from the starting point table and converts it to a NetworkElement that we can use for tracing
-		/// 
-		/// </summary>
-		/// 
+    /// <summary>
+    /// GetNetworkElementFromStartingPoint
+    /// 
+    /// This routine takes a row from the starting point table and converts it to a NetworkElement that we can use for tracing
+    /// 
+    /// </summary>
+    /// 
 
     private FeatureElement GetFeatureElementFromStartingPointRow(Row startingPointRow, UtilityNetwork utilityNetwork, UtilityNetworkDefinition definition)
     {

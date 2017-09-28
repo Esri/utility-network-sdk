@@ -17,7 +17,7 @@
 
 -->
 <ArcGIS defaultAssembly="LoadReportSample.dll" defaultNamespace="LoadReportSample" xmlns="http://schemas.esri.com/DADF/Registry" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://schemas.esri.com/DADF/Registry file:///C:/Program%20Files/ArcGIS/Pro/bin/ArcGIS.Desktop.Framework.xsd">
-  <AddInInfo id="{384328fa-9ff3-4ead-8f85-c32caabcd38b}" version="1.0" desktopVersion="1.3.5661">
+  <AddInInfo id="{384328fa-9ff3-4ead-8f85-c32caabcd38b}" version="1.0" desktopVersion="2.1">
     <Name>LoadReportSample</Name>
     <Description>An Addin which demonstrates how to execute a downstream trace using the utility network</Description>
     <Image>Images\AddinDesktop32.png</Image>
