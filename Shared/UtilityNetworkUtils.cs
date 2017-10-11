@@ -16,6 +16,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ArcGIS.Core.CIM;
 using ArcGIS.Core.Data;
 using ArcGIS.Core.Internal.Data.UtilityNetwork;
 using ArcGIS.Desktop.Internal.Mapping;
@@ -86,6 +87,110 @@ namespace UtilityNetworkSamples
         return null;
       }
 
+    }
+
+    public static FeatureLayer FindFeatureLayer(IReadOnlyList<Layer> layerList, FeatureClass featureClassToFind, int subtypeCodeToFind)
+    {
+      foreach (Layer layer in layerList)
+      {
+        // If we find a FeatureLayer, check to see if it is the correct feature class
+        if (layer is FeatureLayer)
+        {
+          FeatureLayer featureLayer = layer as FeatureLayer;
+          if (IsCorrectFeatureClass(featureLayer, featureClassToFind))
+          {
+            return featureLayer;
+          }
+        }
+
+        // If we find a SubtypeGroupLayer, iterate through the children to find the layer that corresponds to our subtype
+        else if (layer is SubtypeGroupLayer)
+        {
+          CompositeLayer compositeLayer = layer as CompositeLayer;
+          IReadOnlyList<Layer> subtypeLayers = compositeLayer.Layers;
+          if (subtypeLayers.Count > 0)
+          {
+            FeatureLayer firstSubtypeLayer = subtypeLayers.First() as FeatureLayer;
+            if (IsCorrectFeatureClass(firstSubtypeLayer, featureClassToFind))
+            {
+              foreach(Layer subtypeLayer in subtypeLayers)
+              {
+                FeatureLayer subtypeFeatureLayer = subtypeLayer as FeatureLayer;
+                if (IsCorrectSubtype(subtypeFeatureLayer, subtypeCodeToFind))
+                  return subtypeFeatureLayer;
+              }
+            }
+          }
+        }
+
+        // If we find a different kind of composite layer, just call this routine recursively
+        else if (layer is CompositeLayer)
+        {
+          CompositeLayer compositeLayer = layer as CompositeLayer;
+
+          FeatureLayer foundFeatureLayer = FindFeatureLayer(compositeLayer.Layers, featureClassToFind, subtypeCodeToFind);
+          if (foundFeatureLayer != null)
+          {
+            return foundFeatureLayer;
+          }
+        }
+      }
+      
+      return null;
+    }
+
+    private static bool IsCorrectSubtype(FeatureLayer featureLayer, int subtypeCodeToFind)
+    {
+      CIMFeatureLayer cimFeatureLayer = featureLayer.GetDefinition() as CIMFeatureLayer;
+      CIMFeatureTable cimFeatureTable = cimFeatureLayer.FeatureTable;
+      return subtypeCodeToFind == cimFeatureTable.SubtypeValue;
+    }
+
+    private static bool IsCorrectFeatureClass(FeatureLayer featureLayer, FeatureClass featureClass)
+
+    {
+      return featureLayer.GetFeatureClass().GetName() == featureClass.GetName();
+    }
+
+    public static FeatureSource GetFeatureSourceByUsageType(DomainNetwork domainNetwork, FeatureClassUsageType usageType)
+    {
+      IReadOnlyList<NetworkSource> networkSources = domainNetwork.NetworkSources;
+      foreach (NetworkSource networkSource in networkSources)
+      {
+        if (networkSource is FeatureSource)
+        {
+          FeatureSource featureSource = networkSource as FeatureSource;
+          if (featureSource.FeatureClassUsageType == usageType)
+          {
+            return featureSource;
+          }
+        }
+      }
+      return null;
+    }
+
+    public static int FindSubtypeCodeWithCategory(FeatureSource featureSource, string category)
+    {
+      foreach(AssetGroup assetGroup in featureSource.GetAssetGroups())
+      {
+        if (AssetGroupSupportsCategory(assetGroup, category))
+        {
+          return assetGroup.Code;
+        }
+      }
+      return -1;  //nothing found
+    }
+
+    private static bool AssetGroupSupportsCategory(AssetGroup assetGroup, string category)
+    {
+      foreach(AssetType assetType in assetGroup.GetAssetTypes())
+      {
+        if (assetType.CategoryList.Contains(category))
+        {
+          return true;
+        }
+      }
+      return false;
     }
   }
 }

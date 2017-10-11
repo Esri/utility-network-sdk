@@ -100,17 +100,19 @@ namespace LoadReportSample
         return;
       }
 
-      Layer selectionLayer = mapViewEventArgs.MapView.GetSelectedLayers()[0];
-      if (!(selectionLayer is UtilityNetworkLayer) && !(selectionLayer is FeatureLayer))
+      Layer selectedLayer = mapViewEventArgs.MapView.GetSelectedLayers()[0];
+      if (!(selectedLayer is UtilityNetworkLayer) && !(selectedLayer is FeatureLayer))
       {
         MessageBox.Show("Please select a utility network layer.", "Create Load Report");
         return;
       }
 
+      IReadOnlyList<Layer> layerList = mapViewEventArgs.MapView.Map.Layers;
+
       // Generate our report.  The LoadTraceResults class is used to pass back results from the worker thread to the UI thread that we're currently executing.
       LoadTraceResults traceResults = await QueuedTask.Run<LoadTraceResults>(() =>
       {
-        return GenerateReport(selectionLayer);
+        return GenerateReport(layerList, selectedLayer);
       });
 
       // Assemble a string to show in the message box
@@ -143,7 +145,7 @@ namespace LoadReportSample
     /// 
     /// </summary>
 
-    public LoadTraceResults GenerateReport(Layer selectedLayer)
+    public LoadTraceResults GenerateReport(IReadOnlyList<Layer> layerList, Layer selectedLayer)
     {
       // Create a new results object.  We use this class to pass back a set of data from the worker thread to the UI thread
 
@@ -201,10 +203,19 @@ namespace LoadReportSample
             }
 
 
+
+
             // Get the Tier for Medium Voltage Radial
             DomainNetwork electricDomainNetwork = utilityNetworkDefinition.GetDomainNetwork(ElectricDomainNetwork);
             Tier mediumVoltageTier = electricDomainNetwork.GetTier(MediumVoltageTier);
 
+            // Get the feature layer that corresponds to the service point layer; this is the layer we will use to select features
+            FeatureSource distributionDeviceFeatureSource = UtilityNetworkUtils.GetFeatureSourceByUsageType(electricDomainNetwork, FeatureClassUsageType.Device);
+            FeatureClass distributionDeviceFeatureClass = utilityNetwork.GetFeatureClass(distributionDeviceFeatureSource);
+
+            int servicePointSubtypeCode = UtilityNetworkUtils.FindSubtypeCodeWithCategory(distributionDeviceFeatureSource, ServicePointCategory);
+
+            FeatureLayer servicePointLayer = UtilityNetworkUtils.FindFeatureLayer(layerList, distributionDeviceFeatureClass, servicePointSubtypeCode);
 
             // Set up the trace configuration
             TraceConfiguration traceConfiguration = new TraceConfiguration();
@@ -242,6 +253,9 @@ namespace LoadReportSample
             TraceArgument traceArgument = new TraceArgument(startingPointList);
             traceArgument.Configuration = traceConfiguration;
 
+            // Create a list of object ids 
+            List<long> objectIDList = new List<long>();
+
             // Trace on the A phase
             traceConfiguration.Traversability.Condition = new Or(baseCondition, aPhaseCondition);
             traceConfiguration.Functions = new List<Function>() { aPhaseLoad };
@@ -251,6 +265,7 @@ namespace LoadReportSample
             {
               TraceResult resultsA = downstreamTracer.Trace(traceArgument);
               results.NumberServicePointsA = resultsA.TraceOutput.Count;
+              objectIDList.AddRange(GetObjectIDsFromTraceResult(resultsA));
               if (resultsA.FunctionOutput.Count > 0)
               {
                 results.TotalLoadA = (double)resultsA.FunctionOutput.First().GlobalValue;
@@ -275,6 +290,7 @@ namespace LoadReportSample
             {
               TraceResult resultsB = downstreamTracer.Trace(traceArgument);
               results.NumberServicePointsB = resultsB.TraceOutput.Count;
+              objectIDList.AddRange(GetObjectIDsFromTraceResult(resultsB));
               if (resultsB.FunctionOutput.Count > 0)
               {
                 results.TotalLoadB = (double)resultsB.FunctionOutput.First().GlobalValue;
@@ -299,6 +315,7 @@ namespace LoadReportSample
             {
               TraceResult resultsC = downstreamTracer.Trace(traceArgument);
               results.NumberServicePointsC = resultsC.TraceOutput.Count;
+              objectIDList.AddRange(GetObjectIDsFromTraceResult(resultsC));
               if (resultsC.FunctionOutput.Count > 0)
               {
                 results.TotalLoadC = (double)resultsC.FunctionOutput.First().GlobalValue;
@@ -313,7 +330,18 @@ namespace LoadReportSample
                 results.Message += e.Message;
               }
             }
+
+            // Now select the service points we found on the map
+            if (servicePointLayer != null)
+            {
+              servicePointLayer.ClearSelection();
+              Selection selection = servicePointLayer.GetSelection();
+              selection.Add(objectIDList);
+              servicePointLayer.SetSelection(selection);
+            }
           }
+
+
 
           // append success message to the output string
 
@@ -416,6 +444,17 @@ namespace LoadReportSample
 
       return utilityNetwork.CreateFeatureElement(assetType, globalID, terminalID);
 
+    }
+
+    private List<long> GetObjectIDsFromTraceResult(TraceResult traceResult)
+    {
+      List<long> objectIDList = new List<long>();
+
+      foreach(FeatureElement element in traceResult.TraceOutput)
+      {
+        objectIDList.Add(element.ObjectID);
+      }
+      return objectIDList;
     }
   }
 }
