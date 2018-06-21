@@ -1,4 +1,4 @@
-# ArcGIS Pro 2.1 Utility Network SDK
+# ArcGIS Pro 2.2 Utility Network SDK
 
 The utility network in ArcGIS provides organizations that manage networks – like electric, telecom, gas, sewer, and water lines – an extensible solution that focuses on performance, scalability, interoperability, and data integrity. 
 
