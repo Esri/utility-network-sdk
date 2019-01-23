@@ -11,7 +11,7 @@ The [wiki page](https://github.com/esri/utility-network-sdk/wiki) contains a sin
 - [SDK Changes](https://github.com/esri/utility-network-sdk/wiki/SDK%20Changes).  For those partners who were part of our alpha or beta programs, this document describes what classes and methods changed with each pre-release.
 
 ## Licensing
-Copyright 2018 Esri
+Copyright 2019 Esri
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
