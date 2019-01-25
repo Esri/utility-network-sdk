@@ -6,7 +6,7 @@ This repository is no longer in active use.  Most of the utility network documen
 
 -------------------------
 ## Documentation
-The [wiki page](https://github.com/esri/utility-network-sdk/wiki) contains a single document document:
+The [wiki page](https://github.com/esri/utility-network-sdk/wiki) contains a single document:
 
 - [SDK Changes](https://github.com/esri/utility-network-sdk/wiki/SDK%20Changes).  For those partners who were part of our alpha or beta programs, this document describes what classes and methods changed with each pre-release.
 
